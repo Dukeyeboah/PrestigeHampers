@@ -70,7 +70,7 @@ export default function CartPage() {
           Browse our collection and add items to get started.
         </p>
         <Button
-          onClick={() => router.push('/inventory')}
+          onClick={() => router.push('/products')}
           className='mt-2 rounded-full'
         >
           See products
@@ -243,7 +243,7 @@ export default function CartPage() {
               <Link href='/orders'>View my orders</Link>
             </Button>
             <Button variant='outline' className='rounded-full' asChild>
-              <Link href='/inventory'>Continue shopping</Link>
+              <Link href='/products'>Continue shopping</Link>
             </Button>
           </div>
         </DialogContent>

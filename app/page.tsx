@@ -38,7 +38,7 @@ export default function Home() {
           </p>
 
           <div className='mt-8'>
-            <Link href='/inventory'>
+            <Link href='/products'>
               <button className='px-8 py-3.5 rounded-full bg-neutral-900 text-white text-sm font-medium tracking-wide hover:bg-neutral-800 transition-colors'>
                 Shop hampers
               </button>

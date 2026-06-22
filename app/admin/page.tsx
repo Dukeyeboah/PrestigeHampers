@@ -78,6 +78,8 @@ import {
   mergeAdminInventory,
   filterInventoryByCatalog,
   isHamperItem,
+  catalogKindFromProduct,
+  type CatalogKind,
   type InventoryCatalogFilter,
 } from '@/lib/admin-inventory';
 import { seedPrestigeInventory } from '@/lib/seed-inventory';
@@ -106,18 +108,24 @@ function AdminDashboard() {
   // Product Form State
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productForm, setProductForm] = useState<Partial<Product>>({
+  const emptyProductForm = (
+    kind: CatalogKind = 'product'
+  ): Partial<Product> => ({
     name: '',
-    category: '',
+    kind,
+    category: kind === 'hamper' ? 'Hampers' : '',
     subCategory: undefined,
     price: 0,
     stock: 0,
-    unit: '',
+    unit: kind === 'hamper' ? 'hamper' : '',
     description: '',
     imageUrl: '',
     expiryDate: undefined,
     code: '',
   });
+  const [productForm, setProductForm] = useState<Partial<Product>>(
+    emptyProductForm()
+  );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -483,11 +491,34 @@ Thank you for your business!
         }
       }
 
+      const catalogKind: CatalogKind =
+        productForm.kind === 'hamper' ? 'hamper' : 'product';
+
       const productData = {
         ...productForm,
+        kind: catalogKind,
+        category:
+          catalogKind === 'hamper'
+            ? 'Hampers'
+            : productForm.category === 'Hampers'
+              ? ''
+              : productForm.category,
+        unit:
+          catalogKind === 'hamper'
+            ? productForm.unit || 'hamper'
+            : productForm.unit,
         imageUrl: imageUrl || productForm.imageUrl,
         updatedAt: Date.now(),
       };
+
+      if (catalogKind === 'product' && !productData.category) {
+        toast.error('Please select a category for this product');
+        return;
+      }
+
+      if (catalogKind === 'hamper') {
+        delete productData.expiryDate;
+      }
 
       // Remove undefined fields
       Object.keys(productData).forEach((key) => {
@@ -502,27 +533,16 @@ Thank you for your business!
           { ...productData, id: editingProduct.id },
           { merge: true }
         );
-        toast.success(isHamperItem(editingProduct) ? 'Hamper updated' : 'Product updated');
+        toast.success(catalogKind === 'hamper' ? 'Hamper updated' : 'Product updated');
       } else {
         await addDoc(collection(db, 'inventory'), productData);
-        toast.success('Product added');
+        toast.success(catalogKind === 'hamper' ? 'Hamper added' : 'Product added');
       }
       setIsProductDialogOpen(false);
       setEditingProduct(null);
       setImageFile(null);
       setImagePreview(null);
-      setProductForm({
-        name: '',
-        category: '',
-        subCategory: undefined,
-        price: 0,
-        stock: 0,
-        unit: '',
-        description: '',
-        imageUrl: '',
-        expiryDate: undefined,
-        code: '',
-      });
+      setProductForm(emptyProductForm());
     } catch (error) {
       console.error('Error saving product:', error);
       toast.error('Failed to save product');
@@ -596,29 +616,36 @@ Thank you for your business!
 
   const openProductDialog = (product?: Product) => {
     if (product) {
+      const kind = catalogKindFromProduct(product);
       setEditingProduct(product);
-      setProductForm(product);
+      setProductForm({
+        ...product,
+        kind,
+        category: kind === 'hamper' ? 'Hampers' : product.category,
+        unit: product.unit || (kind === 'hamper' ? 'hamper' : ''),
+      });
       setImagePreview(resolveProductImageUrl(product) || product.imageUrl || null);
       setImageFile(null);
     } else {
       setEditingProduct(null);
-      setProductForm({
-        name: '',
-        category: '',
-        subCategory: undefined,
-        price: 0,
-        stock: 0,
-        unit: '',
-        description: '',
-        imageUrl: '',
-        expiryDate: undefined,
-        code: '',
-      });
+      setProductForm(emptyProductForm(inventoryCatalogFilter));
       setImagePreview(null);
       setImageFile(null);
     }
     setIsProductDialogOpen(true);
   };
+
+  const setCatalogKind = (kind: CatalogKind) => {
+    setProductForm((prev) => ({
+      ...prev,
+      kind,
+      category: kind === 'hamper' ? 'Hampers' : prev.category === 'Hampers' ? '' : prev.category,
+      unit: kind === 'hamper' ? prev.unit || 'hamper' : prev.unit === 'hamper' ? '' : prev.unit,
+      expiryDate: kind === 'hamper' ? undefined : prev.expiryDate,
+    }));
+  };
+
+  const isEditingHamper = productForm.kind === 'hamper';
 
   // Filter orders
   const filteredOrders = orders.filter((order) => {
@@ -738,7 +765,7 @@ Thank you for your business!
             {isSeedingProducts ? 'Importing…' : 'Import sample products'}
           </Button>
           <Button onClick={() => openProductDialog()}>
-            <Plus className='mr-2 h-4 w-4' /> Add Product
+            <Plus className='mr-2 h-4 w-4' /> Add item
           </Button>
         </div>
       </div>
@@ -1751,11 +1778,6 @@ Thank you for your business!
                           Hidden
                         </span>
                       )}
-                      {isHamperItem(product) && (
-                        <span className='absolute top-2 right-2 text-[10px] bg-neutral-900/80 text-white px-2 py-0.5 rounded-full'>
-                          Hamper
-                        </span>
-                      )}
                     </div>
                     <div className='p-3 space-y-2'>
                       <p className='font-medium text-sm line-clamp-2'>{product.name}</p>
@@ -1914,13 +1936,45 @@ Thank you for your business!
         <DialogContent className='max-h-[85vh] flex flex-col sm:max-w-lg'>
           <DialogHeader className='flex-shrink-0'>
             <DialogTitle>
-              {editingProduct ? 'Edit Product' : 'Add New Product'}
+              {editingProduct
+                ? isEditingHamper
+                  ? 'Edit Hamper'
+                  : 'Edit Product'
+                : isEditingHamper
+                  ? 'Add New Hamper'
+                  : 'Add New Product'}
             </DialogTitle>
             <DialogDescription>
-              Fill in the product details below.
+              Choose whether this is a hamper or a single product, then fill in
+              the details below.
             </DialogDescription>
           </DialogHeader>
           <div className='grid gap-4 py-2 overflow-y-auto flex-1 min-h-0 pr-1'>
+            <div className='grid grid-cols-4 items-center gap-4'>
+              <Label className='text-right'>Type</Label>
+              <div className='col-span-3 inline-flex rounded-lg border p-1 bg-muted/30'>
+                <Button
+                  type='button'
+                  variant={isEditingHamper ? 'default' : 'ghost'}
+                  size='sm'
+                  className='flex-1 h-8'
+                  onClick={() => setCatalogKind('hamper')}
+                >
+                  <Gift className='h-3.5 w-3.5 mr-1.5' />
+                  Hamper
+                </Button>
+                <Button
+                  type='button'
+                  variant={!isEditingHamper ? 'default' : 'ghost'}
+                  size='sm'
+                  className='flex-1 h-8'
+                  onClick={() => setCatalogKind('product')}
+                >
+                  <Package className='h-3.5 w-3.5 mr-1.5' />
+                  Product
+                </Button>
+              </div>
+            </div>
             <div className='grid grid-cols-4 items-center gap-4'>
               <Label htmlFor='name' className='text-right'>
                 Name
@@ -1938,23 +1992,32 @@ Thank you for your business!
               <Label htmlFor='category' className='text-right'>
                 Category
               </Label>
-              <Select
-                value={productForm.category}
-                onValueChange={(value) =>
-                  setProductForm({ ...productForm, category: value })
-                }
-              >
-                <SelectTrigger className='col-span-3'>
-                  <SelectValue placeholder='Select category' />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRODUCT_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isEditingHamper ? (
+                <Input
+                  id='category'
+                  value='Hampers'
+                  readOnly
+                  className='col-span-3 bg-muted/50'
+                />
+              ) : (
+                <Select
+                  value={productForm.category}
+                  onValueChange={(value) =>
+                    setProductForm({ ...productForm, category: value })
+                  }
+                >
+                  <SelectTrigger className='col-span-3'>
+                    <SelectValue placeholder='Select category' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRODUCT_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className='grid grid-cols-4 items-center gap-4'>
               <Label htmlFor='subCategory' className='text-right'>
@@ -2039,7 +2102,7 @@ Thank you for your business!
             </div>
             <div className='grid grid-cols-4 items-center gap-4'>
               <Label htmlFor='code' className='text-right'>
-                Product Code
+                {isEditingHamper ? 'Hamper Code' : 'Product Code'}
               </Label>
               <Input
                 id='code'
@@ -2053,7 +2116,7 @@ Thank you for your business!
             </div>
             <div className='grid grid-cols-4 items-center gap-4'>
               <Label htmlFor='image' className='text-right'>
-                Product Image
+                {isEditingHamper ? 'Hamper Image' : 'Product Image'}
               </Label>
               <div className='col-span-3 space-y-2'>
                 <Input
@@ -2079,31 +2142,33 @@ Thank you for your business!
                 )}
               </div>
             </div>
-            <div className='grid grid-cols-4 items-center gap-4'>
-              <Label htmlFor='expiryDate' className='text-right'>
-                Expiry Date
-              </Label>
-              <Input
-                id='expiryDate'
-                type='date'
-                value={
-                  productForm.expiryDate
-                    ? new Date(productForm.expiryDate)
-                        .toISOString()
-                        .split('T')[0]
-                    : ''
-                }
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    expiryDate: e.target.value
-                      ? new Date(e.target.value).getTime()
-                      : undefined,
-                  })
-                }
-                className='col-span-3'
-              />
-            </div>
+            {!isEditingHamper && (
+              <div className='grid grid-cols-4 items-center gap-4'>
+                <Label htmlFor='expiryDate' className='text-right'>
+                  Expiry Date
+                </Label>
+                <Input
+                  id='expiryDate'
+                  type='date'
+                  value={
+                    productForm.expiryDate
+                      ? new Date(productForm.expiryDate)
+                          .toISOString()
+                          .split('T')[0]
+                      : ''
+                  }
+                  onChange={(e) =>
+                    setProductForm({
+                      ...productForm,
+                      expiryDate: e.target.value
+                        ? new Date(e.target.value).getTime()
+                        : undefined,
+                    })
+                  }
+                  className='col-span-3'
+                />
+              </div>
+            )}
           </div>
           <DialogFooter className='flex-shrink-0 gap-2 sm:gap-0'>
             <Button
@@ -2115,7 +2180,11 @@ Thank you for your business!
               Cancel
             </Button>
             <Button onClick={handleSaveProduct} disabled={uploadingImage}>
-              {uploadingImage ? 'Uploading...' : 'Save Product'}
+              {uploadingImage
+                ? 'Uploading...'
+                : isEditingHamper
+                  ? 'Save Hamper'
+                  : 'Save Product'}
             </Button>
           </DialogFooter>
         </DialogContent>

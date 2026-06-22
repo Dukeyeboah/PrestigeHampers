@@ -110,7 +110,7 @@ export function HomeAboutSections() {
               size='lg'
               className='rounded-full bg-white text-neutral-900 hover:bg-neutral-100 w-full sm:w-auto'
             >
-              <Link href='/inventory'>
+              <Link href='/products'>
                 Shop hampers
                 <ArrowRight className='ml-2 h-4 w-4' />
               </Link>
@@ -121,7 +121,7 @@ export function HomeAboutSections() {
               variant='outline'
               className='rounded-full border-white/30 text-white hover:bg-white/10 w-full sm:w-auto'
             >
-              <Link href='/inventory?tab=products'>Browse products</Link>
+              <Link href='/products?tab=products'>Browse products</Link>
             </Button>
           </div>
         </div>

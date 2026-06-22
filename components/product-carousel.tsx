@@ -102,7 +102,7 @@ export function ProductCarousel({
 
           {/* See more card */}
           <Link
-            href='/inventory'
+            href='/products'
             className='flex-shrink-0 w-[150px] sm:w-[200px] md:w-[260px] flex items-center justify-center'
           >
             <div className='flex flex-col items-center justify-center gap-3 w-full aspect-[4/5] rounded-2xl border border-dashed border-neutral-300 bg-white/60 backdrop-blur-sm transition-all hover:border-neutral-400 hover:bg-white/80'>

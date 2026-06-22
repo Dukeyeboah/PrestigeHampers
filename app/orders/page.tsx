@@ -183,7 +183,7 @@ export default function OrdersPage() {
             Place your first order from our product collection.
           </p>
           <Button asChild className='rounded-full mt-6'>
-            <Link href='/inventory'>Browse products</Link>
+            <Link href='/products'>Browse products</Link>
           </Button>
         </div>
       </div>

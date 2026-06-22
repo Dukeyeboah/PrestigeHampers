@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (mode === 'admin') {
               router.push('/admin');
             } else {
-              router.push('/inventory');
+              router.push('/products');
             }
           }
         },

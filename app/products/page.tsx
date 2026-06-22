@@ -16,7 +16,7 @@ const PAGE_SIZE = 16;
 
 type CatalogTab = 'hampers' | 'products';
 
-export default function InventoryPage() {
+export default function ProductsPage() {
   const searchParams = useSearchParams();
   const initialTab =
     searchParams.get('tab') === 'products' ? 'products' : 'hampers';

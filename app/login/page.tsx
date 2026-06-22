@@ -268,7 +268,7 @@ export default function LoginPage() {
         }
 
         await setDoc(userDocRef, newUser);
-        router.push('/inventory');
+        router.push('/products');
       } else {
         const userData = userDoc.data() as User;
 
@@ -284,12 +284,12 @@ export default function LoginPage() {
           await setDoc(userDocRef, { phone: phoneNumber }, { merge: true });
         }
 
-        router.push('/inventory');
+        router.push('/products');
       }
     } catch (error) {
       console.error('Error ensuring user profile:', error);
       // Don't block login if profile creation fails
-      router.push('/inventory');
+      router.push('/products');
     }
   };
 
@@ -468,7 +468,7 @@ export default function LoginPage() {
         onCancel={() => {
           setShowAdminPasskeyDialog(false);
           setPendingUser(null);
-          router.push('/inventory');
+          router.push('/products');
         }}
       />
     </div>

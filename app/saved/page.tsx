@@ -72,7 +72,7 @@ export default function SavedPage() {
         <div className='py-16 space-y-4'>
           <p className='text-muted-foreground'>No saved items yet.</p>
           <Button asChild className='rounded-full'>
-            <Link href='/inventory'>Browse products</Link>
+            <Link href='/products'>Browse products</Link>
           </Button>
         </div>
       ) : (

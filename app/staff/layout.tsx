@@ -44,7 +44,7 @@ export default function StaffLayout({
       if (!user) {
         router.push('/login');
       } else if (!isStaff) {
-        router.push('/inventory');
+        router.push('/products');
       }
     }
   }, [user, loading, isStaff, router]);

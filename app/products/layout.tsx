@@ -5,7 +5,7 @@ import type React from 'react';
 import { TopNav } from '@/components/top-nav';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function InventoryLoading() {
+function ProductsLoading() {
   return (
     <div className='space-y-8'>
       <Skeleton className='h-10 w-48 mx-auto' />
@@ -19,7 +19,7 @@ function InventoryLoading() {
   );
 }
 
-export default function InventoryLayout({
+export default function ProductsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ export default function InventoryLayout({
       <TopNav />
       <main className='pt-20'>
         <div className='mx-auto max-w-6xl px-4 md:px-8 py-6 md:py-10'>
-          <Suspense fallback={<InventoryLoading />}>{children}</Suspense>
+          <Suspense fallback={<ProductsLoading />}>{children}</Suspense>
         </div>
       </main>
     </div>
