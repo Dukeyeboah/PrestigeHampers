@@ -41,12 +41,32 @@ interface LoginDialogProps {
 
 type AltAuthMethod = 'email' | 'phone' | null;
 
+function digitsOnly(raw: string): string {
+  return raw.replace(/\D/g, '');
+}
+
 function formatGhanaPhone(raw: string): string {
   const trimmed = raw.trim();
-  if (trimmed.startsWith('+')) return trimmed;
-  if (trimmed.startsWith('233')) return `+${trimmed}`;
-  if (trimmed.startsWith('0')) return `+233${trimmed.slice(1)}`;
-  return `+233${trimmed}`;
+  if (!trimmed) return '';
+
+  const d = digitsOnly(trimmed);
+  if (trimmed.startsWith('+')) {
+    if (d.startsWith('233')) return `+${d}`;
+    return trimmed;
+  }
+  if (d.startsWith('233')) return `+${d}`;
+  if (d.startsWith('0')) return `+233${d.slice(1)}`;
+  if (d.length === 9) return `+233${d}`;
+  return `+233${d}`;
+}
+
+function isCompleteGhanaPhoneInput(raw: string): boolean {
+  const d = digitsOnly(raw);
+  return (
+    (d.startsWith('0') && d.length === 10) ||
+    (d.startsWith('233') && d.length === 12) ||
+    (d.length === 9 && !d.startsWith('0'))
+  );
 }
 
 function isValidGhanaPhone(raw: string): boolean {
@@ -56,7 +76,7 @@ function isValidGhanaPhone(raw: string): boolean {
 export function LoginDialog({
   open,
   onOpenChange,
-  defaultMode = 'login',
+  defaultMode = 'signup',
 }: LoginDialogProps) {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>(defaultMode);
   const [altMethod, setAltMethod] = useState<AltAuthMethod>(null);
@@ -83,7 +103,7 @@ export function LoginDialog({
     auth,
     RECAPTCHA_CONTAINER_ID,
     phoneRecaptchaEnabled,
-    handleRecaptchaExpired
+    handleRecaptchaExpired,
   );
 
   useEffect(() => {
@@ -111,7 +131,7 @@ export function LoginDialog({
       phoneNumber: string | null;
     },
     phoneNumber?: string,
-    displayName?: string
+    displayName?: string,
   ) => {
     if (!db) return;
     const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -193,7 +213,7 @@ export function LoginDialog({
           ? err.message
           : authMode === 'signup'
             ? 'Sign up failed.'
-            : 'Sign in failed.'
+            : 'Sign in failed.',
       );
     } finally {
       setLoading(false);
@@ -220,11 +240,12 @@ export function LoginDialog({
 
     try {
       const formatted = formatGhanaPhone(phone);
+      setPhone(formatted);
       const verifier = await getVerifier();
       const confirmation = await signInWithPhoneNumber(
         auth,
         formatted,
-        verifier
+        verifier,
       );
       setConfirmationResult(confirmation);
       setError('');
@@ -259,10 +280,7 @@ export function LoginDialog({
     }
     try {
       const result = await confirmationResult.confirm(verificationCode);
-      await ensureUserProfile(
-        result.user,
-        formatGhanaPhone(phone)
-      );
+      await ensureUserProfile(result.user, formatGhanaPhone(phone));
     } catch (err: unknown) {
       const code =
         err && typeof err === 'object' && 'code' in err
@@ -279,6 +297,19 @@ export function LoginDialog({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    if (isCompleteGhanaPhoneInput(value)) {
+      setPhone(formatGhanaPhone(value));
+      return;
+    }
+    setPhone(value);
+  };
+
+  const handlePhoneBlur = () => {
+    if (!phone.trim()) return;
+    setPhone(formatGhanaPhone(phone));
   };
 
   const selectAltMethod = (method: 'email' | 'phone') => {
@@ -311,10 +342,12 @@ export function LoginDialog({
         <DialogContent className='sm:max-w-md rounded-2xl'>
           <DialogHeader className='text-center sm:text-center'>
             <DialogTitle className='text-xl'>
-              {authMode === 'signup' ? 'Create your account' : 'Welcome back'}
+              {authMode === 'signup' ? 'Create your account' : 'Log in'}
             </DialogTitle>
-            <DialogDescription>
-              Save favourites, track orders, and get updates from Prestige Hampers.
+            <DialogDescription className='text-center'>
+              {authMode === 'signup'
+                ? 'Create account to save products and track orders.'
+                : 'Log in to your account.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -430,7 +463,8 @@ export function LoginDialog({
                       type='tel'
                       placeholder='0244123456'
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onBlur={handlePhoneBlur}
                       className='rounded-xl'
                       autoComplete='tel'
                     />
@@ -512,7 +546,7 @@ export function LoginDialog({
                   className='underline font-medium text-foreground'
                   onClick={() => setAuthMode('login')}
                 >
-                  Sign in
+                  Log in
                 </button>
               </>
             )}
