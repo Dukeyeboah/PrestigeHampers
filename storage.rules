@@ -20,7 +20,19 @@ service firebase.storage {
         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.permissions.canManageInventory == true;
     }
 
-    // Product images
+    // Hamper images (hampers/filename.jpg)
+    match /hampers/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() || staffCanManageInventory();
+    }
+
+    // Product images (flat: products/1.jpg … products/22.jpg)
+    match /products/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() || staffCanManageInventory();
+    }
+
+    // Product images (nested folders)
     match /products/{productId}/{allPaths=**} {
       // Anyone can read product images (authenticated or not) - for browsing
       allow read: if true;

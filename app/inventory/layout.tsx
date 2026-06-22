@@ -1,28 +1,20 @@
 'use client';
 
+import { Suspense } from 'react';
 import type React from 'react';
-import { AppSidebar } from '@/components/app-sidebar';
-import { SidebarProvider, useSidebar } from '@/components/sidebar-context';
+import { TopNav } from '@/components/top-nav';
+import { Skeleton } from '@/components/ui/skeleton';
 
-function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { isCollapsed } = useSidebar();
-
+function InventoryLoading() {
   return (
-    <div className='flex min-h-screen bg-background'>
-      <AppSidebar />
-      <main
-        className={`flex-1 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'md:ml-20' : 'md:ml-64 lg:ml-72'
-        }`}
-      >
-        <div
-          className={`w-full py-8 md:py-10 px-4 md:px-8 mt-12 md:mt-0 ${
-            isCollapsed ? 'max-w-full' : 'container max-w-6xl'
-          }`}
-        >
-          {children}
-        </div>
-      </main>
+    <div className='space-y-8'>
+      <Skeleton className='h-10 w-48 mx-auto' />
+      <Skeleton className='h-12 w-full max-w-xl mx-auto rounded-full' />
+      <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className='aspect-[3/4] rounded-2xl' />
+        ))}
+      </div>
     </div>
   );
 }
@@ -33,8 +25,13 @@ export default function InventoryLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <LayoutContent>{children}</LayoutContent>
-    </SidebarProvider>
+    <div className='min-h-screen bg-white'>
+      <TopNav />
+      <main className='pt-20'>
+        <div className='mx-auto max-w-6xl px-4 md:px-8 py-6 md:py-10'>
+          <Suspense fallback={<InventoryLoading />}>{children}</Suspense>
+        </div>
+      </main>
+    </div>
   );
 }

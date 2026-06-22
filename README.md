@@ -1,6 +1,6 @@
-# Leetonia Wholesale
+# Prestige Hampers
 
-A complete full-stack web application for wholesale pharmacy management, built for Leetonia Wholesale in Accra, Ghana. This system enables clients to browse and order pharmaceutical products while allowing pharmacy staff and administrators to manage inventory, track orders, and handle sales.
+A full-stack e-commerce app for **Prestige Hampers** — premium gift hampers and treats. Customers browse products, save favourites, and place orders; admins manage inventory, orders, and analytics.
 
 ## 🎯 Purpose
 
@@ -202,5 +202,5 @@ For issues or questions, please contact the development team.
 
 ---
 
-**Built with ❤️ for Leetonia Wholesale, Accra, Ghana**
+**Built for Prestige Hampers**
 

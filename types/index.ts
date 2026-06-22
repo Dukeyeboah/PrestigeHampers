@@ -14,6 +14,7 @@ export interface User {
   phone?: string;
   photoURL?: string; // Profile image URL from Google/Gmail
   createdAt: number;
+  savedProductIds?: string[];
   // Staff-specific permissions (only for staff role)
   permissions?: StaffPermissions;
 }
@@ -23,6 +24,7 @@ export interface Product {
   name: string;
   category: string;
   subCategory?: string; // Optional subcategory for future filtering
+  kind?: 'hamper' | 'product';
   price: number;
   stock: number;
   unit: string;
@@ -47,7 +49,7 @@ export interface Order {
   status:
     | 'pending'
     | 'checking_stock'
-    | 'pharmacy_confirmed'
+    | 'shop_confirmed'
     | 'customer_confirmed'
     | 'processing'
     | 'completed'
@@ -56,8 +58,17 @@ export interface Order {
   deliveryOption?: 'pickup' | 'delivery';
   deliveryAddress?: string;
   deliveryFee?: number;
-  paymentMethod?: 'momo' | 'cash';
+  paymentMethod?: 'momo' | 'cash' | 'card';
+  /** Name provided at checkout for cash payments */
+  cashPayerName?: string;
+  /** Phone provided at checkout for cash payments */
+  cashPayerPhone?: string;
+  customerPhone?: string;
   notes?: string;
+  isGuest?: boolean;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
   createdAt: number;
   updatedAt: number;
 }

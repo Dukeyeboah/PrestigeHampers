@@ -2,21 +2,14 @@
 
 import { useState } from 'react';
 import type { Product } from '@/types';
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Plus, AlertCircle, Minus } from 'lucide-react';
+import { Bookmark, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { LoginDialog } from '@/components/login-dialog';
+import { AddToCartDialog } from '@/components/add-to-cart-dialog';
 import { LazyImage } from '@/components/lazy-image';
+import { resolveProductImageUrl } from '@/lib/product-image';
+import { useSavedProducts } from '@/hooks/use-saved-products';
 
 interface ProductCardProps {
   product: Product;
@@ -24,194 +17,110 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const [quantity, setQuantity] = useState(1);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const { user, isAdmin, viewMode } = useAuth();
-  const showPrice = isAdmin || viewMode === 'admin';
+  const { user } = useAuth();
+  const { isSaved, toggleSave } = useSavedProducts();
+
   const isOutOfStock = product.stock <= 0;
-  const isLowStock = product.stock > 0 && product.stock < 10;
-  const maxQuantity = Math.min(product.stock, 999);
+  const saved = isSaved(product.id);
+  const imageSrc = resolveProductImageUrl(product);
 
-  const handleQuantityChange = (value: number) => {
-    const newQuantity = Math.max(1, Math.min(value, maxQuantity));
-    setQuantity(newQuantity);
-  };
-
-  const handleIncrement = () => {
-    if (quantity < maxQuantity) {
-      setQuantity(quantity + 1);
-    }
-  };
-  const handleDecrement = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
-  const handleAddToCart = () => {
+  const handleSave = async () => {
     if (!user) {
       setShowLoginDialog(true);
       return;
     }
-    if (!isOutOfStock && quantity > 0 && quantity <= product.stock) {
-      onAddToCart(product, quantity);
-      setQuantity(1); // Reset to 1 after adding
-    }
+    await toggleSave(product.id);
   };
 
   return (
-    <Card className='overflow-hidden transition-all hover:shadow-md border-border/60 bg-card flex flex-col h-full'>
-      <div className='aspect-[3/2] relative bg-secondary/20 flex items-center justify-center text-muted-foreground overflow-hidden'>
-        {/* Lazy loading image component */}
-        {product.imageUrl && !imageError ? (
-          <LazyImage
-            src={product.imageUrl}
-            alt={product.name}
-            className='w-full h-full object-cover'
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <span className='text-2xl font-serif opacity-30'>
-            {product.name.charAt(0)}
-          </span>
-        )}
+    <>
+      <article className='group flex flex-col h-full'>
+        <div className='relative aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 shadow-sm transition-all duration-300 hover:shadow-md'>
+          {imageSrc && !imageError ? (
+            <LazyImage
+              src={imageSrc}
+              alt={product.name}
+              className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-105'
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className='w-full h-full flex items-center justify-center'>
+              <span className='text-4xl md:text-5xl font-serif text-neutral-300'>
+                {product.name.charAt(0)}
+              </span>
+            </div>
+          )}
 
-        {isOutOfStock && (
-          <div className='absolute inset-0 bg-background/60 backdrop-blur-[1px] flex items-center justify-center'>
-            <Badge variant='destructive' className='text-xs px-2 py-0.5'>
-              Out of Stock
-            </Badge>
-          </div>
-        )}
-      </div>
-      <CardHeader className='p-3 pb-0 flex-shrink-0'>
-        <div className='flex justify-between items-start gap-2'>
-          <div className='flex-1 min-w-0 space-y-1'>
-            <Badge
-              variant='outline'
-              className='text-[10px] text-muted-foreground tracking-wider uppercase bg-transparent border-muted-foreground/30'
-            >
-              {product.category}
-            </Badge>
-            <CardTitle className='font-serif text-base leading-tight line-clamp-2'>
-              {product.name}
-            </CardTitle>
-          </div>
-          {showPrice && (
-            <div className='text-right flex-shrink-0'>
-              <span className='block font-bold text-primary text-base'>
-                ₵{product.price.toFixed(2)}
-              </span>
-              <span className='text-xs text-muted-foreground'>
-                per {product.unit}
+          {isOutOfStock && (
+            <div className='absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center'>
+              <span className='text-[10px] md:text-xs font-medium uppercase tracking-wider text-neutral-600 bg-white/90 px-3 py-1.5 rounded-full'>
+                Out of stock
               </span>
             </div>
           )}
-          {!showPrice && (
-            <div className='text-right flex-shrink-0'>
-              <span className='text-xs text-muted-foreground'>
-                {product.unit}
-              </span>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className='p-3 pt-0 flex-shrink-0'>
-        <div className='flex items-center gap-2 text-xs'>
-          <div
-            className={`h-2 w-2 rounded-full flex-shrink-0 ${
-              isOutOfStock
-                ? 'bg-destructive'
-                : isLowStock
-                  ? 'bg-yellow-500'
-                  : 'bg-green-500'
-            }`}
-          />
-          <span
-            className={
-              isOutOfStock
-                ? 'text-destructive font-medium'
-                : isLowStock
-                  ? 'text-yellow-600'
-                  : 'text-green-600'
-            }
+
+          <button
+            type='button'
+            onClick={handleSave}
+            className='absolute top-2.5 right-2.5 md:top-3 md:right-3 h-8 w-8 md:h-9 md:w-9 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center transition-all hover:bg-white hover:scale-105'
+            aria-label={saved ? 'Remove from saved' : 'Save for later'}
           >
-            {isOutOfStock ? 'Unavailable' : `${product.stock} in stock`}
-          </span>
+            <Bookmark
+              className={`h-3.5 w-3.5 md:h-4 md:w-4 transition-colors ${
+                saved ? 'fill-neutral-900 text-neutral-900' : 'text-neutral-600'
+              }`}
+            />
+          </button>
         </div>
-      </CardContent>
-      <CardFooter className='p-3 pt-0 mt-auto'>
-        {!isOutOfStock ? (
-          <div className='flex items-center gap-2 w-full'>
-            {/* Quantity Selector on the left */}
-            <div className='flex items-center gap-3 flex-shrink-0'>
-              <Label
-                htmlFor={`qty-${product.id}`}
-                className='text-xs text-muted-foreground whitespace-nowrap'
-              >
-                Qty:
-              </Label>
-              <div className='flex items-center gap-1'>
-                <Button
-                  variant='outline'
-                  size='icon'
-                  className='h-8 w-8'
-                  onClick={handleDecrement}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className='h-3 w-3' />
-                </Button>
-                <Input
-                  id={`qty-${product.id}`}
-                  type='number'
-                  min={1}
-                  max={maxQuantity}
-                  value={quantity}
-                  onChange={(e) =>
-                    handleQuantityChange(parseInt(e.target.value) || 1)
-                  }
-                  className='w-14 text-center h-8 text-sm'
-                />
-                <Button
-                  variant='outline'
-                  size='icon'
-                  className='h-8 w-8'
-                  onClick={handleIncrement}
-                  disabled={quantity >= maxQuantity}
-                >
-                  <Plus className='h-3 w-3' />
-                </Button>
-              </div>
-            </div>
-            {/* Add to Order button on the right */}
-            <Button
-              className='w-40 ml-auto mr-auto'
-              variant='default'
-              onClick={handleAddToCart}
-            >
-              <Plus className='mr-2 h-4 w-4' />
-              Add to Order
-            </Button>
+
+        <div className='pt-2.5 md:pt-3 px-0.5 space-y-2 flex-1 flex flex-col'>
+          <h3 className='font-medium text-xs md:text-sm leading-snug line-clamp-2 text-foreground'>
+            {product.name}
+          </h3>
+
+          <div className='flex items-center justify-between text-xs text-muted-foreground'>
+            <span className='truncate pr-1'>
+              {isOutOfStock ? 'Unavailable' : `${product.stock} left`}
+            </span>
+            <span className='font-semibold text-sm text-foreground shrink-0'>
+              ₵{product.price.toFixed(2)}
+            </span>
           </div>
-        ) : (
+
           <Button
-            className='w-full'
-            variant='outline'
-            disabled={isOutOfStock && user !== null}
-            onClick={() => {
-              if (!user) {
-                setShowLoginDialog(true);
-                return;
-              }
-              // Handle notify me functionality for authenticated users
-            }}
+            size='sm'
+            className='w-full rounded-full h-8 md:h-9 mt-auto text-xs font-medium'
+            variant={isOutOfStock ? 'outline' : 'default'}
+            disabled={isOutOfStock}
+            onClick={() => setShowAddDialog(true)}
           >
-            <AlertCircle className='mr-2 h-4 w-4' />
-            Notify Me
+            {isOutOfStock ? (
+              'Notify me'
+            ) : (
+              <>
+                <ShoppingBag className='mr-1.5 h-3.5 w-3.5' />
+                Add to cart
+              </>
+            )}
           </Button>
-        )}
-      </CardFooter>
-      <LoginDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} />
-    </Card>
+        </div>
+      </article>
+
+      <AddToCartDialog
+        product={product}
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onConfirm={onAddToCart}
+      />
+
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        defaultMode='signup'
+      />
+    </>
   );
 }

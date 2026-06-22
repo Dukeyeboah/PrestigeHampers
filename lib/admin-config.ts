@@ -1,9 +1,19 @@
 /**
  * Admin Configuration
  *
- * Add admin emails here. These users will be able to access admin features
- * after providing their passkey.
+ * Portal passkey: required at /admin before Google sign-in.
+ * Whitelist passkeys: optional per-email passkeys for legacy login flow.
  */
+
+export const ADMIN_PASSKEY_SESSION_KEY = 'prestige_admin_passkey_verified';
+
+/** Passkey for /admin portal — override via NEXT_PUBLIC_ADMIN_PORTAL_PASSKEY in .env.local */
+export const ADMIN_PORTAL_PASSKEY =
+  process.env.NEXT_PUBLIC_ADMIN_PORTAL_PASSKEY || 'Prestige!!';
+
+export function verifyPortalPasskey(passkey: string): boolean {
+  return passkey === ADMIN_PORTAL_PASSKEY;
+}
 
 export interface AdminConfig {
   email: string;
@@ -21,10 +31,8 @@ export const ADMIN_WHITELIST: AdminConfig[] = [
     name: 'Nana Afrakuma',
   },
 
-  // Add your admin emails and passkeys here
   // Example:
-  // { email: "admin@leetonia.com", passkey: "ADMIN2024", name: "Pharmacy Manager" },
-  // { email: "manager@leetonia.com", passkey: "MGR2024", name: "Store Manager" },
+  // { email: "admin@prestigehampers.com", passkey: "Prestige!!", name: "Store Manager" },
 ];
 
 /**

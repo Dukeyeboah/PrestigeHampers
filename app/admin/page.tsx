@@ -1,8 +1,8 @@
 'use client';
 
-import { DialogDescription } from '@/components/ui/dialog';
+import { isShopConfirmed, formatOrderStatus } from '@/lib/order-status';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   query,
   orderBy,
@@ -31,6 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -61,6 +62,7 @@ import {
   Calendar,
   Eye,
   EyeOff,
+  Loader2,
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -68,8 +70,14 @@ import { storage } from '@/lib/firebase';
 import type { User } from '@/types';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
 import { createOrderStatusNotification } from '@/lib/notifications';
+import { resolveProductImageUrl } from '@/lib/product-image';
+import { seedPrestigeInventory } from '@/lib/seed-inventory';
+import { AdminPortalGate } from '@/components/admin-portal-gate';
+import { useAuth } from '@/lib/auth-context';
+import { TopNav } from '@/components/top-nav';
+import { LayoutGrid, List } from 'lucide-react';
 
-export default function AdminDashboard() {
+function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -80,7 +88,9 @@ export default function AdminDashboard() {
   const [userFilter, setUserFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('orders');
+  const [activeTab, setActiveTab] = useState<string>('inventory');
+  const [inventoryViewMode, setInventoryViewMode] = useState<'grid' | 'list'>('grid');
+  const prevOrderCountRef = useRef<number | null>(null);
 
   // Product Form State
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -100,6 +110,7 @@ export default function AdminDashboard() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isSeedingProducts, setIsSeedingProducts] = useState(false);
 
   // Order editing state
   const [isOrderEditDialogOpen, setIsOrderEditDialogOpen] = useState(false);
@@ -129,7 +140,20 @@ export default function AdminDashboard() {
       orderBy('createdAt', 'desc')
     );
     const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
-      setOrders(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Order)));
+      const newOrders = snapshot.docs.map(
+        (d) => ({ id: d.id, ...d.data() } as Order)
+      );
+      if (
+        prevOrderCountRef.current !== null &&
+        newOrders.length > prevOrderCountRef.current
+      ) {
+        const latest = newOrders[0];
+        toast.info(
+          `New order #${latest.id.slice(0, 8)} — ${latest.userName || latest.guestName || 'Guest'} · ₵${latest.total.toFixed(2)}`
+        );
+      }
+      prevOrderCountRef.current = newOrders.length;
+      setOrders(newOrders);
     });
 
     // Listen to Inventory
@@ -230,7 +254,7 @@ export default function AdminDashboard() {
   const generateInvoice = (order: Order) => {
     const invoiceContent = `
 INVOICE
-Leetonia Wholesale
+Prestige Hampers
 
 Invoice #: ${order.id.slice(0, 8)}
 Date: ${format(new Date(order.createdAt), 'MMMM d, yyyy')}
@@ -245,7 +269,9 @@ Subtotal: ₵${order.total.toFixed(2)}
 ${order.deliveryFee ? `Delivery Fee: ₵${order.deliveryFee.toFixed(2)}` : ''}
 Total: ₵${(order.total + (order.deliveryFee || 0)).toFixed(2)}
 
-Payment Method: ${order.paymentMethod === 'momo' ? 'Mobile Money (Momo)' : 'Cash'}
+Payment Method: ${formatPaymentMethod(order.paymentMethod)}
+${order.paymentMethod === 'cash' && order.cashPayerName ? `Cash Contact: ${order.cashPayerName} · ${order.cashPayerPhone || ''}` : ''}
+${order.customerPhone ? `Customer Phone: ${order.customerPhone}` : ''}
 ${order.deliveryOption === 'delivery' ? `Delivery Address: ${order.deliveryAddress || 'N/A'}` : 'Pickup: Store Pickup'}
 
 Status: ${order.status.replace('_', ' ').toUpperCase()}
@@ -281,7 +307,7 @@ Thank you for your business!
           </head>
           <body>
             <h1>INVOICE</h1>
-            <h2>Leetonia Wholesale</h2>
+            <h2>Prestige Hampers</h2>
             <p><strong>Invoice #:</strong> ${order.id.slice(0, 8)}</p>
             <p><strong>Date:</strong> ${format(new Date(order.createdAt), 'MMMM d, yyyy')}</p>
             <p><strong>Customer:</strong> ${order.userName || order.userEmail}</p>
@@ -321,7 +347,7 @@ Thank you for your business!
                 </tr>
               </tfoot>
             </table>
-            <p><strong>Payment Method:</strong> ${order.paymentMethod === 'momo' ? 'Mobile Money (Momo)' : 'Cash'}</p>
+            <p><strong>Payment Method:</strong> ${formatPaymentMethod(order.paymentMethod)}</p>
             ${order.deliveryOption === 'delivery' ? `<p><strong>Delivery Address:</strong> ${order.deliveryAddress || 'N/A'}</p>` : '<p><strong>Pickup:</strong> Store Pickup</p>'}
             <p><strong>Status:</strong> ${order.status.replace('_', ' ').toUpperCase()}</p>
             <p style="margin-top: 40px; text-align: center;">Thank you for your business!</p>
@@ -528,7 +554,7 @@ Thank you for your business!
     if (product) {
       setEditingProduct(product);
       setProductForm(product);
-      setImagePreview(product.imageUrl || null);
+      setImagePreview(resolveProductImageUrl(product) || product.imageUrl || null);
       setImageFile(null);
     } else {
       setEditingProduct(null);
@@ -553,7 +579,10 @@ Thank you for your business!
   // Filter orders
   const filteredOrders = orders.filter((order) => {
     const matchesStatus =
-      statusFilter === 'all' || order.status === statusFilter;
+      statusFilter === 'all' ||
+      (statusFilter === 'shop_confirmed'
+        ? isShopConfirmed(order.status)
+        : order.status === statusFilter);
     const matchesUser = userFilter === 'all' || order.userId === userFilter;
     const matchesProduct =
       productFilter === 'all' ||
@@ -629,13 +658,41 @@ Thank you for your business!
     return user?.name || user?.email || 'Unknown User';
   };
 
+  const handleImportSampleProducts = async () => {
+    if (!db) {
+      toast.error('Database not available');
+      return;
+    }
+    setIsSeedingProducts(true);
+    try {
+      const { success, failed } = await seedPrestigeInventory(db);
+      if (failed === 0) {
+        toast.success(`Imported ${success} sample products into inventory`);
+      } else {
+        toast.warning(`Imported ${success} products, ${failed} failed`);
+      }
+    } catch (error) {
+      console.error('Seed error:', error);
+      toast.error('Failed to import sample products');
+    } finally {
+      setIsSeedingProducts(false);
+    }
+  };
+
   return (
     <div className='space-y-8'>
       <div className='flex flex-col md:flex-row justify-between md:items-center gap-4'>
         <h1 className='text-3xl font-serif font-bold text-primary'>
           Admin Dashboard
         </h1>
-        <div className='flex gap-2'>
+        <div className='flex flex-wrap gap-2'>
+          <Button
+            variant='outline'
+            onClick={handleImportSampleProducts}
+            disabled={isSeedingProducts}
+          >
+            {isSeedingProducts ? 'Importing…' : 'Import sample products'}
+          </Button>
           <Button onClick={() => openProductDialog()}>
             <Plus className='mr-2 h-4 w-4' /> Add Product
           </Button>
@@ -664,7 +721,7 @@ Thank you for your business!
         <Card
           className='cursor-pointer hover:shadow-md transition-shadow'
           onClick={() => {
-            setStatusFilter('pharmacy_confirmed');
+            setStatusFilter('shop_confirmed');
             setActiveTab('orders');
           }}
         >
@@ -675,7 +732,7 @@ Thank you for your business!
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold text-blue-600'>
-              {orders.filter((o) => o.status === 'pharmacy_confirmed').length}
+              {orders.filter((o) => isShopConfirmed(o.status)).length}
             </div>
           </CardContent>
         </Card>
@@ -762,7 +819,10 @@ Thank you for your business!
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-        <TabsList className='w-full justify-start h-12 bg-muted/50 p-1'>
+        <TabsList className='w-full justify-start h-12 bg-muted/50 p-1 flex-wrap'>
+          <TabsTrigger value='inventory' className='h-full px-6'>
+            Manage Inventory
+          </TabsTrigger>
           <TabsTrigger value='orders' className='h-full px-6'>
             Manage Orders
           </TabsTrigger>
@@ -771,9 +831,6 @@ Thank you for your business!
           </TabsTrigger>
           <TabsTrigger value='analytics' className='h-full px-6'>
             Analytics
-          </TabsTrigger>
-          <TabsTrigger value='inventory' className='h-full px-6'>
-            Manage Inventory
           </TabsTrigger>
           <TabsTrigger value='staff' className='h-full px-6'>
             Staff Management
@@ -809,13 +866,13 @@ Thank you for your business!
             </Button>
             <Button
               variant={
-                statusFilter === 'pharmacy_confirmed' ? 'default' : 'outline'
+                statusFilter === 'shop_confirmed' ? 'default' : 'outline'
               }
               size='sm'
-              onClick={() => setStatusFilter('pharmacy_confirmed')}
+              onClick={() => setStatusFilter('shop_confirmed')}
             >
               Awaiting Customer (
-              {orders.filter((o) => o.status === 'pharmacy_confirmed').length})
+              {orders.filter((o) => isShopConfirmed(o.status)).length})
             </Button>
             <Button
               variant={
@@ -881,7 +938,7 @@ Thank you for your business!
                           ? 'default'
                           : order.status === 'customer_confirmed'
                           ? 'default'
-                          : order.status === 'pharmacy_confirmed'
+                          : isShopConfirmed(order.status)
                           ? 'default'
                           : 'secondary'
                       }
@@ -908,34 +965,29 @@ Thank you for your business!
                             </span>
                           </div>
                         ))}
-                        {order.deliveryOption && (
-                          <div className='pt-2 text-sm text-muted-foreground'>
-                            <p>
-                              Delivery:{' '}
-                              {order.deliveryOption === 'delivery'
-                                ? 'Home Delivery'
-                                : 'Store Pickup'}
-                            </p>
-                            {order.deliveryAddress && (
-                              <p className='text-xs mt-1'>
-                                {order.deliveryAddress}
-                              </p>
-                            )}
-                            {order.deliveryFee && order.deliveryFee > 0 && (
+                        <div className='pt-2 text-sm text-muted-foreground space-y-1'>
+                          {formatOrderPaymentDetails(order).map((line) => (
+                            <p key={line}>{line}</p>
+                          ))}
+                          {order.deliveryOption && (
+                            <>
                               <p>
-                                Delivery Fee: ₵{order.deliveryFee.toFixed(2)}
+                                Delivery:{' '}
+                                {order.deliveryOption === 'delivery'
+                                  ? 'Home Delivery'
+                                  : 'Store Pickup'}
                               </p>
-                            )}
-                            {order.paymentMethod && (
-                              <p>
-                                Payment:{' '}
-                                {order.paymentMethod === 'momo'
-                                  ? 'Mobile Money (Momo)'
-                                  : 'Cash'}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                              {order.deliveryAddress && (
+                                <p className='text-xs'>{order.deliveryAddress}</p>
+                              )}
+                              {order.deliveryFee && order.deliveryFee > 0 && (
+                                <p>
+                                  Delivery Fee: ₵{order.deliveryFee.toFixed(2)}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
                         <div className='pt-2 flex justify-between font-bold'>
                           <span>Total</span>
                           <span>
@@ -974,8 +1026,8 @@ Thank you for your business!
                             <SelectItem value='checking_stock'>
                               Checking Stock
                             </SelectItem>
-                            <SelectItem value='pharmacy_confirmed'>
-                              Pharmacy Confirmed
+                            <SelectItem value='shop_confirmed'>
+                              Shop Confirmed
                             </SelectItem>
                             <SelectItem value='customer_confirmed'>
                               Customer Confirmed
@@ -1032,8 +1084,8 @@ Thank you for your business!
                 <SelectItem value='all'>All Statuses</SelectItem>
                 <SelectItem value='pending'>Pending</SelectItem>
                 <SelectItem value='checking_stock'>Checking Stock</SelectItem>
-                <SelectItem value='pharmacy_confirmed'>
-                  Pharmacy Confirmed
+                <SelectItem value='shop_confirmed'>
+                  Shop Confirmed
                 </SelectItem>
                 <SelectItem value='customer_confirmed'>
                   Customer Confirmed
@@ -1107,7 +1159,7 @@ Thank you for your business!
                             ? 'default'
                             : order.status === 'customer_confirmed'
                             ? 'default'
-                            : order.status === 'pharmacy_confirmed'
+                            : isShopConfirmed(order.status)
                             ? 'default'
                             : 'secondary'
                         }
@@ -1139,27 +1191,24 @@ Thank you for your business!
                           </span>
                         </div>
                       ))}
-                      {order.deliveryOption && (
-                        <div className='pt-2 border-t text-sm text-muted-foreground'>
-                          <p>
-                            Delivery:{' '}
-                            {order.deliveryOption === 'delivery'
-                              ? 'Home Delivery'
-                              : 'Store Pickup'}
-                          </p>
-                          {order.deliveryFee && order.deliveryFee > 0 && (
-                            <p>Delivery Fee: ₵{order.deliveryFee.toFixed(2)}</p>
-                          )}
-                          {order.paymentMethod && (
+                      <div className='pt-2 border-t text-sm text-muted-foreground space-y-1'>
+                        {formatOrderPaymentDetails(order).map((line) => (
+                          <p key={line}>{line}</p>
+                        ))}
+                        {order.deliveryOption && (
+                          <>
                             <p>
-                              Payment:{' '}
-                              {order.paymentMethod === 'momo'
-                                ? 'Mobile Money (Momo)'
-                                : 'Cash'}
+                              Delivery:{' '}
+                              {order.deliveryOption === 'delivery'
+                                ? 'Home Delivery'
+                                : 'Store Pickup'}
                             </p>
-                          )}
-                        </div>
-                      )}
+                            {order.deliveryFee && order.deliveryFee > 0 && (
+                              <p>Delivery Fee: ₵{order.deliveryFee.toFixed(2)}</p>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1563,14 +1612,124 @@ Thank you for your business!
           </Card>
         </TabsContent>
 
-        <TabsContent value='inventory' className='mt-6'>
+        <TabsContent value='inventory' className='mt-6 space-y-4'>
+          <div className='flex items-center justify-between'>
+            <h2 className='text-lg font-semibold'>Manage Inventory</h2>
+            <div className='flex items-center gap-1 rounded-lg border p-1 bg-white'>
+              <Button
+                variant={inventoryViewMode === 'grid' ? 'default' : 'ghost'}
+                size='sm'
+                className='h-8 px-3'
+                onClick={() => setInventoryViewMode('grid')}
+              >
+                <LayoutGrid className='h-4 w-4 mr-1.5' />
+                Grid
+              </Button>
+              <Button
+                variant={inventoryViewMode === 'list' ? 'default' : 'ghost'}
+                size='sm'
+                className='h-8 px-3'
+                onClick={() => setInventoryViewMode('list')}
+              >
+                <List className='h-4 w-4 mr-1.5' />
+                List
+              </Button>
+            </div>
+          </div>
+
+          {products.length === 0 && (
+            <div className='rounded-xl border border-dashed p-8 text-center space-y-3'>
+              <p className='text-muted-foreground text-sm'>
+                No products in Firestore yet. Storage images alone are not enough —
+                click below to create 22 inventory documents linked to{' '}
+                <code className='text-xs'>products/1.jpg … 22.jpg</code>.
+              </p>
+              <Button
+                onClick={handleImportSampleProducts}
+                disabled={isSeedingProducts}
+              >
+                {isSeedingProducts ? 'Importing…' : 'Import 22 sample products'}
+              </Button>
+            </div>
+          )}
+
+          {inventoryViewMode === 'grid' ? (
+            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className={`rounded-xl border bg-white overflow-hidden ${
+                    product.isHidden ? 'opacity-60' : ''
+                  }`}
+                >
+                  <div className='aspect-square bg-neutral-100 relative'>
+                    {resolveProductImageUrl(product) ? (
+                      <img
+                        src={resolveProductImageUrl(product)}
+                        alt={product.name}
+                        className='w-full h-full object-cover'
+                      />
+                    ) : (
+                      <div className='w-full h-full flex items-center justify-center text-neutral-300 text-3xl font-serif'>
+                        {product.name.charAt(0)}
+                      </div>
+                    )}
+                    {product.isHidden && (
+                      <span className='absolute top-2 left-2 text-[10px] bg-neutral-900 text-white px-2 py-0.5 rounded-full'>
+                        Hidden
+                      </span>
+                    )}
+                  </div>
+                  <div className='p-3 space-y-2'>
+                    <p className='font-medium text-sm line-clamp-2'>{product.name}</p>
+                    <div className='flex justify-between text-xs text-muted-foreground'>
+                      <span>₵{product.price.toFixed(2)}</span>
+                      <span>{product.stock} in stock</span>
+                    </div>
+                    <div className='flex gap-1 pt-1'>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        className='flex-1 h-8 text-xs'
+                        onClick={() => openProductDialog(product)}
+                      >
+                        <Edit className='h-3 w-3 mr-1' />
+                        Edit
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-8 w-8'
+                        onClick={() => handleToggleProductVisibility(product)}
+                      >
+                        {product.isHidden ? (
+                          <EyeOff className='h-3.5 w-3.5' />
+                        ) : (
+                          <Eye className='h-3.5 w-3.5' />
+                        )}
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-8 w-8 text-destructive'
+                        onClick={() => handleDeleteProduct(product.id)}
+                      >
+                        <Trash2 className='h-3.5 w-3.5' />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className='rounded-md border bg-card'>
             <div className='grid grid-cols-12 gap-4 p-4 border-b font-medium text-sm text-muted-foreground bg-muted/20'>
+              <div className='col-span-2 hidden md:block'>Image</div>
               <div className='col-span-4 md:col-span-3'>Name</div>
               <div className='col-span-3 md:col-span-2'>Category</div>
               <div className='col-span-2 md:col-span-2 text-right'>Price</div>
-              <div className='col-span-2 md:col-span-2 text-center'>Stock</div>
-              <div className='col-span-1 md:col-span-3 text-right'>Actions</div>
+              <div className='col-span-2 md:col-span-1 text-center'>Stock</div>
+              <div className='col-span-1 md:col-span-2 text-right'>Actions</div>
             </div>
             {products.map((product) => (
               <div
@@ -1579,6 +1738,21 @@ Thank you for your business!
                   product.isHidden ? 'opacity-60 bg-muted/20' : ''
                 }`}
               >
+                <div className='col-span-2 hidden md:block'>
+                  <div className='h-12 w-12 rounded-lg overflow-hidden bg-muted'>
+                    {resolveProductImageUrl(product) ? (
+                      <img
+                        src={resolveProductImageUrl(product)}
+                        alt={product.name}
+                        className='h-full w-full object-cover'
+                      />
+                    ) : (
+                      <div className='h-full w-full flex items-center justify-center text-xs text-muted-foreground'>
+                        {product.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div
                   className='col-span-4 md:col-span-3 font-medium truncate flex items-center gap-2'
                   title={product.name}
@@ -1650,12 +1824,13 @@ Thank you for your business!
               </div>
             ))}
           </div>
+          )}
         </TabsContent>
       </Tabs>
 
       <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className='max-h-[85vh] flex flex-col sm:max-w-lg'>
+          <DialogHeader className='flex-shrink-0'>
             <DialogTitle>
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </DialogTitle>
@@ -1663,7 +1838,7 @@ Thank you for your business!
               Fill in the product details below.
             </DialogDescription>
           </DialogHeader>
-          <div className='grid gap-4 py-4'>
+          <div className='grid gap-4 py-2 overflow-y-auto flex-1 min-h-0 pr-1'>
             <div className='grid grid-cols-4 items-center gap-4'>
               <Label htmlFor='name' className='text-right'>
                 Name
@@ -1848,7 +2023,15 @@ Thank you for your business!
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className='flex-shrink-0 gap-2 sm:gap-0'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => setIsProductDialogOpen(false)}
+              disabled={uploadingImage}
+            >
+              Cancel
+            </Button>
             <Button onClick={handleSaveProduct} disabled={uploadingImage}>
               {uploadingImage ? 'Uploading...' : 'Save Product'}
             </Button>
@@ -2175,5 +2358,36 @@ Thank you for your business!
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  const { isAdmin, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className='flex h-screen items-center justify-center bg-white'>
+        <Loader2 className='h-8 w-8 animate-spin text-neutral-400' />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <AdminPortalGate
+        onSuccess={() => {
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
+  return (
+    <>
+      <TopNav />
+      <div className='mx-auto max-w-6xl px-4 md:px-8 pb-8 md:pb-10 pt-24'>
+        <AdminDashboard />
+      </div>
+    </>
   );
 }

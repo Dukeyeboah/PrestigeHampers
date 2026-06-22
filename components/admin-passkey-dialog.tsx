@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Lock } from 'lucide-react';
@@ -97,9 +97,8 @@ export function AdminPasskeyDialog({
           )}
           <div className='space-y-2'>
             <Label htmlFor='passkey'>Admin Passkey</Label>
-            <Input
+            <PasswordInput
               id='passkey'
-              type='password'
               placeholder='Enter your passkey'
               value={passkey}
               onChange={(e) => setPasskey(e.target.value)}

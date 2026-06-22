@@ -20,7 +20,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { useAuth } from '@/lib/auth-context';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,19 +91,13 @@ export function AppSidebar() {
           collapsed ? 'px-3 py-4 justify-center' : 'px-6 py-4'
         }`}
       >
-        <div className='relative h-10 w-10 flex-shrink-0'>
-          <Image
-            src='/images/LeetoniaWholesaleLogo.jpg'
-            alt='Leetonia Wholesale'
-            fill
-            className='object-contain'
-            priority
-          />
-        </div>
         {!collapsed && (
-          <span className='text-lg font-serif font-bold text-primary truncate'>
-            Leetonia Wholesale
+          <span className='text-lg font-semibold tracking-tight text-primary truncate'>
+            Prestige Hampers
           </span>
+        )}
+        {collapsed && (
+          <span className='text-sm font-bold text-primary'>PH</span>
         )}
       </div>
       <div className='flex-1 px-4 py-4'>

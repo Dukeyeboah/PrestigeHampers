@@ -1,18 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Order } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import {
   Package,
@@ -20,36 +21,35 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
+  ClipboardList,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { formatOrderStatus, isShopConfirmed } from '@/lib/order-status';
+import { LoginDialog } from '@/components/login-dialog';
 
 export default function OrdersPage() {
-  const { user, isAdmin, viewMode } = useAuth();
+  const { user, loading: authLoading, isAdmin, viewMode } = useAuth();
   const showPrice = isAdmin || viewMode === 'admin';
-  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+
+    if (!user) {
+      setOrders([]);
+      setLoading(false);
+      return;
+    }
 
     if (!db) {
       setLoading(false);
       return;
     }
 
-    // In a real app, we would also check offlineDB for pending offline orders
-    // Note: This query requires a Firestore index on orders collection
-    // Create index: userId (Ascending) + createdAt (Descending)
-    // The index link is provided in the error message from Firebase
-    const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', user.id),
-      orderBy('createdAt', 'desc')
-    );
+    setLoading(true);
+    const q = query(collection(db, 'orders'), where('userId', '==', user.id));
 
     const unsubscribe = onSnapshot(
       q,
@@ -58,25 +58,18 @@ export default function OrdersPage() {
           id: doc.id,
           ...doc.data(),
         })) as Order[];
-        // Sort by createdAt desc in case index is missing
         fetchedOrders.sort((a, b) => b.createdAt - a.createdAt);
         setOrders(fetchedOrders);
         setLoading(false);
       },
-      (error: any) => {
+      (error: unknown) => {
         console.error('Error fetching orders:', error);
-        // If index error, show helpful message
-        if (error.code === 'failed-precondition') {
-          console.error(
-            'Firestore index required. Click the link in the error message to create it.'
-          );
-        }
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, authLoading]);
 
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
@@ -98,6 +91,7 @@ export default function OrdersPage() {
             Checking Stock
           </Badge>
         );
+      case 'shop_confirmed':
       case 'pharmacy_confirmed':
         return (
           <Badge variant='default' className='bg-primary hover:bg-primary'>
@@ -129,19 +123,51 @@ export default function OrdersPage() {
           </Badge>
         );
       default:
-        return <Badge variant='outline'>{status}</Badge>;
+        return <Badge variant='outline'>{formatOrderStatus(status)}</Badge>;
     }
   };
 
-  if (loading) {
+  const pageHeader = (
+    <div className='text-center space-y-1'>
+      <h1 className='text-2xl md:text-3xl font-semibold tracking-tight'>
+        My Orders
+      </h1>
+      <p className='text-sm text-muted-foreground'>
+        Track your hamper orders in one place
+      </p>
+    </div>
+  );
+
+  if (authLoading || (user && loading)) {
     return (
       <div className='space-y-6'>
-        <h1 className='text-3xl font-serif font-bold text-primary'>
-          My Orders
-        </h1>
+        {pageHeader}
         {[1, 2].map((i) => (
-          <Skeleton key={i} className='h-32 w-full' />
+          <Skeleton key={i} className='h-32 w-full rounded-2xl' />
         ))}
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className='text-center py-16 md:py-24 space-y-4 px-2'>
+        <div className='mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100'>
+          <ClipboardList className='h-6 w-6 text-neutral-600' />
+        </div>
+        {pageHeader}
+        <p className='text-muted-foreground max-w-md mx-auto text-sm'>
+          Sign in to view your order history. Orders are saved to your account
+          so you can track status and confirmations anytime.
+        </p>
+        <Button className='rounded-full' onClick={() => setShowLogin(true)}>
+          Sign in to view orders
+        </Button>
+        <LoginDialog
+          open={showLogin}
+          onOpenChange={setShowLogin}
+          defaultMode='login'
+        />
       </div>
     );
   }
@@ -149,29 +175,30 @@ export default function OrdersPage() {
   if (orders.length === 0) {
     return (
       <div className='space-y-6'>
-        <h1 className='text-3xl font-serif font-bold text-primary'>
-          My Orders
-        </h1>
-        <div className='text-center py-12 border rounded-lg bg-card'>
+        {pageHeader}
+        <div className='text-center py-12 md:py-16 border rounded-2xl bg-card px-4'>
           <Package className='mx-auto h-12 w-12 text-muted-foreground/50' />
           <h3 className='mt-4 text-lg font-medium'>No orders yet</h3>
-          <p className='text-muted-foreground'>
-            Place your first order from the inventory.
+          <p className='text-muted-foreground text-sm mt-1'>
+            Place your first order from our product collection.
           </p>
+          <Button asChild className='rounded-full mt-6'>
+            <Link href='/inventory'>Browse products</Link>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='space-y-8'>
-      <h1 className='text-3xl font-serif font-bold text-primary'>My Orders</h1>
+    <div className='space-y-6 md:space-y-8'>
+      {pageHeader}
 
       <div className='space-y-4'>
         {orders.map((order) => (
-          <Card key={order.id} className='overflow-hidden'>
-            <CardHeader className='bg-secondary/30 flex flex-row items-center justify-between py-4'>
-              <div className='space-y-1'>
+          <Card key={order.id} className='overflow-hidden rounded-2xl'>
+            <CardHeader className='bg-secondary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 px-4 md:px-6'>
+              <div className='space-y-1 min-w-0'>
                 <CardTitle className='text-base font-mono'>
                   #{order.id.slice(0, 8)}
                 </CardTitle>
@@ -179,26 +206,26 @@ export default function OrdersPage() {
                   {format(order.createdAt, 'MMM d, yyyy • h:mm a')}
                 </p>
               </div>
-              <div className='flex items-center gap-4'>
+              <div className='flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto'>
                 {showPrice && (
-                  <span className='font-bold hidden sm:inline-block'>
+                  <span className='font-bold text-sm md:text-base'>
                     ₵{(order.total + (order.deliveryFee || 0)).toFixed(2)}
                   </span>
                 )}
                 {getStatusBadge(order.status)}
               </div>
             </CardHeader>
-            <CardContent className='p-6'>
+            <CardContent className='p-4 md:p-6'>
               <div className='space-y-4'>
                 <div className='space-y-2'>
                   {order.items.map((item) => (
-                    <div key={item.id} className='flex justify-between text-sm'>
-                      <span>
-                        <span className='font-medium'>{item.quantity}x</span>{' '}
-                        {item.name}
+                    <div key={item.id} className='flex justify-between gap-2 text-sm'>
+                      <span className='min-w-0'>
+                        <span className='font-medium'>{item.quantity}×</span>{' '}
+                        <span className='line-clamp-2'>{item.name}</span>
                       </span>
                       {showPrice && (
-                        <span className='text-muted-foreground hidden sm:inline-block'>
+                        <span className='text-muted-foreground shrink-0'>
                           ₵{(item.price * item.quantity).toFixed(2)}
                         </span>
                       )}
@@ -207,7 +234,7 @@ export default function OrdersPage() {
                 </div>
 
                 {order.deliveryOption && (
-                  <div className='pt-2 border-t text-sm'>
+                  <div className='pt-2 border-t text-sm space-y-0.5'>
                     <p className='text-muted-foreground'>
                       Delivery:{' '}
                       {order.deliveryOption === 'delivery'
@@ -223,7 +250,7 @@ export default function OrdersPage() {
                       <p className='text-muted-foreground'>
                         Payment:{' '}
                         {order.paymentMethod === 'momo'
-                          ? 'Mobile Money (Momo)'
+                          ? 'Mobile Money (MoMo)'
                           : 'Cash'}
                       </p>
                     )}
@@ -231,7 +258,7 @@ export default function OrdersPage() {
                 )}
 
                 {showPrice && (
-                  <div className='pt-2 border-t flex justify-between font-bold'>
+                  <div className='pt-2 border-t flex justify-between font-bold text-sm md:text-base'>
                     <span>Total</span>
                     <span>
                       ₵{(order.total + (order.deliveryFee || 0)).toFixed(2)}
@@ -239,9 +266,9 @@ export default function OrdersPage() {
                   </div>
                 )}
 
-                {order.status === 'pharmacy_confirmed' && (
+                {isShopConfirmed(order.status) && (
                   <Link href={`/orders/${order.id}`}>
-                    <Button className='w-full mt-4'>
+                    <Button className='w-full mt-2 rounded-full'>
                       Verify & Confirm Order
                       <ArrowRight className='ml-2 h-4 w-4' />
                     </Button>

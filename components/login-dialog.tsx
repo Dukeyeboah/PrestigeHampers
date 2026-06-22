@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   signInWithPhoneNumber,
@@ -13,6 +14,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -31,174 +33,178 @@ import { isAdminEmail } from '@/lib/admin-config';
 interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultMode?: 'login' | 'signup';
 }
 
-export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
+export function LoginDialog({
+  open,
+  onOpenChange,
+  defaultMode = 'login',
+}: LoginDialogProps) {
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const [confirmationResult, setConfirmationResult] = useState<{
+    confirm: (code: string) => Promise<{ user: unknown }>;
+  } | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [showAdminPasskeyDialog, setShowAdminPasskeyDialog] = useState(false);
-  const [pendingUser, setPendingUser] = useState<any>(null);
   const router = useRouter();
+
+  const resetForm = () => {
+    setError('');
+    setEmail('');
+    setPassword('');
+    setName('');
+    setPhone('');
+    setVerificationCode('');
+    setConfirmationResult(null);
+  };
 
   const setupRecaptcha = () => {
     if (typeof window === 'undefined' || !auth) return null;
-    const recaptchaContainer = document.getElementById('recaptcha-container');
-    if (recaptchaContainer) {
-      recaptchaContainer.innerHTML = '';
-    }
-    const recaptchaVerifier = new RecaptchaVerifier(
-      auth,
-      'recaptcha-container',
-      {
-        size: 'invisible',
-        callback: () => {},
-        'expired-callback': () => {
-          setError('reCAPTCHA expired. Please try again.');
-        },
-      }
-    );
-    return recaptchaVerifier;
+    const container = document.getElementById('auth-recaptcha-container');
+    if (container) container.innerHTML = '';
+    return new RecaptchaVerifier(auth, 'auth-recaptcha-container', {
+      size: 'invisible',
+    });
   };
 
-  const ensureUserProfile = async (firebaseUser: any, phoneNumber?: string) => {
+  const ensureUserProfile = async (
+    firebaseUser: {
+      uid: string;
+      email: string | null;
+      displayName: string | null;
+      photoURL: string | null;
+      phoneNumber: string | null;
+    },
+    phoneNumber?: string,
+    displayName?: string
+  ) => {
     if (!db) return;
-    try {
-      const userDocRef = doc(db, 'users', firebaseUser.uid);
-      const userDoc = await getDoc(userDocRef);
-      const email = firebaseUser.email || '';
-      if (!userDoc.exists()) {
-        const shouldBeAdmin = isAdminEmail(email);
-        const newUser: User = {
-          id: firebaseUser.uid,
-          email: email,
-          phone: phoneNumber || firebaseUser.phoneNumber || '',
-          role: shouldBeAdmin ? 'admin' : 'client',
-          name: firebaseUser.displayName || '',
-          photoURL: firebaseUser.photoURL || undefined,
-          createdAt: Date.now(),
-        };
-        if (shouldBeAdmin) {
-          const userWithoutRole = { ...newUser, role: 'client' as const };
-          await setDoc(userDocRef, userWithoutRole);
-          setPendingUser(firebaseUser);
-          setShowAdminPasskeyDialog(true);
-          return;
-        }
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    const userDoc = await getDoc(userDocRef);
+    const userEmail = firebaseUser.email || '';
+
+    if (!userDoc.exists()) {
+      const shouldBeAdmin = isAdminEmail(userEmail);
+      const newUser: User = {
+        id: firebaseUser.uid,
+        email: userEmail,
+        phone: phoneNumber || firebaseUser.phoneNumber || '',
+        role: 'client',
+        name: displayName || firebaseUser.displayName || '',
+        photoURL: firebaseUser.photoURL || undefined,
+        createdAt: Date.now(),
+      };
+
+      if (shouldBeAdmin) {
         await setDoc(userDocRef, newUser);
-        onOpenChange(false);
-        router.refresh();
-      } else {
-        const userData = userDoc.data() as User;
-        if (isAdminEmail(email) && userData.role !== 'admin') {
-          setPendingUser(firebaseUser);
-          setShowAdminPasskeyDialog(true);
-          return;
-        }
-        if (phoneNumber && !userData.phone) {
-          await setDoc(userDocRef, { phone: phoneNumber }, { merge: true });
-        }
-        onOpenChange(false);
-        router.refresh();
+        setShowAdminPasskeyDialog(true);
+        return;
       }
-    } catch (error) {
-      console.error('Error ensuring user profile:', error);
-      onOpenChange(false);
-      router.refresh();
+      await setDoc(userDocRef, newUser);
+    } else if (isAdminEmail(userEmail) && userDoc.data().role !== 'admin') {
+      setShowAdminPasskeyDialog(true);
+      return;
+    }
+
+    onOpenChange(false);
+    resetForm();
+    router.refresh();
+  };
+
+  const handleGoogle = async () => {
+    setError('');
+    setLoading(true);
+    if (!auth) {
+      setError('Authentication unavailable.');
+      setLoading(false);
+      return;
+    }
+    try {
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      await ensureUserProfile(result.user);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     if (!auth || !db) {
-      setError('Authentication service unavailable.');
+      setError('Authentication unavailable.');
       setLoading(false);
       return;
     }
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
+      const credential =
+        authMode === 'signup'
+          ? await createUserWithEmailAndPassword(auth, email, password)
+          : await signInWithEmailAndPassword(auth, email, password);
+      await ensureUserProfile(credential.user, undefined, name);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : authMode === 'signup'
+            ? 'Sign up failed.'
+            : 'Sign in failed.'
       );
-      await ensureUserProfile(userCredential.user);
-    } catch (err: any) {
-      setError(err.message || 'Failed to login.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
-    if (!auth) {
-      setError('Authentication service unavailable.');
-      setLoading(false);
-      return;
-    }
-    try {
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      await ensureUserProfile(userCredential.user);
-    } catch (err: any) {
-      setError(err.message || 'Failed to login with Google.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePhoneSendCode = async () => {
+  const handlePhoneSend = async () => {
     setError('');
     setPhoneLoading(true);
     if (!auth) {
-      setError('Authentication service unavailable.');
+      setError('Authentication unavailable.');
       setPhoneLoading(false);
       return;
     }
     try {
-      const recaptchaVerifier = setupRecaptcha();
-      if (!recaptchaVerifier) {
-        setError('Failed to initialize reCAPTCHA.');
-        setPhoneLoading(false);
-        return;
-      }
-      const formattedPhone = phone.startsWith('+')
+      const formatted = phone.startsWith('+')
         ? phone
         : `+233${phone.replace(/^0/, '')}`;
+      const verifier = setupRecaptcha();
+      if (!verifier) throw new Error('reCAPTCHA failed.');
       const confirmation = await signInWithPhoneNumber(
         auth,
-        formattedPhone,
-        recaptchaVerifier
+        formatted,
+        verifier
       );
       setConfirmationResult(confirmation);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to send code.');
     } finally {
       setPhoneLoading(false);
     }
   };
 
-  const handlePhoneVerifyCode = async () => {
+  const handlePhoneVerify = async () => {
     setError('');
     setLoading(true);
     if (!confirmationResult) {
-      setError('Please send verification code first.');
+      setError('Send a verification code first.');
       setLoading(false);
       return;
     }
     try {
-      const userCredential = await confirmationResult.confirm(verificationCode);
-      await ensureUserProfile(userCredential.user, phone);
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code.');
+      const result = await confirmationResult.confirm(verificationCode);
+      await ensureUserProfile(result.user as Parameters<typeof ensureUserProfile>[0], phone);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Invalid code.');
     } finally {
       setLoading(false);
     }
@@ -206,161 +212,192 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
-            <DialogTitle>Sign In Required</DialogTitle>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          onOpenChange(v);
+          if (!v) resetForm();
+        }}
+      >
+        <DialogContent className='sm:max-w-md rounded-2xl'>
+          <DialogHeader className='text-center sm:text-center'>
+            <DialogTitle className='text-xl'>
+              {authMode === 'signup' ? 'Create your account' : 'Welcome back'}
+            </DialogTitle>
             <DialogDescription>
-              Please sign in to add items to your cart and place orders.
+              Save favourites, track orders, and get updates from Prestige Hampers.
             </DialogDescription>
           </DialogHeader>
+
           {error && (
             <Alert variant='destructive'>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          <Button
+            className='w-full h-11 rounded-full'
+            variant='outline'
+            onClick={handleGoogle}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+            ) : (
+              <Chrome className='mr-2 h-4 w-4' />
+            )}
+            Continue with Google
+          </Button>
+
+          <div className='relative'>
+            <div className='absolute inset-0 flex items-center'>
+              <span className='w-full border-t' />
+            </div>
+            <div className='relative flex justify-center text-xs uppercase'>
+              <span className='bg-background px-2 text-muted-foreground'>or</span>
+            </div>
+          </div>
+
           <Tabs defaultValue='email' className='w-full'>
-            <TabsList className='grid w-full grid-cols-3'>
+            <TabsList className='grid w-full grid-cols-2'>
               <TabsTrigger value='email'>
-                <Mail className='h-4 w-4 mr-2' />
+                <Mail className='h-4 w-4 mr-1.5' />
                 Email
               </TabsTrigger>
-              <TabsTrigger value='google'>
-                <Chrome className='h-4 w-4 mr-2' />
-                Google
-              </TabsTrigger>
               <TabsTrigger value='phone'>
-                <Phone className='h-4 w-4 mr-2' />
+                <Phone className='h-4 w-4 mr-1.5' />
                 Phone
               </TabsTrigger>
             </TabsList>
-            <TabsContent value='email' className='space-y-4'>
-              <form onSubmit={handleEmailLogin} className='space-y-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='email'>Email</Label>
+
+            <TabsContent value='email' className='space-y-4 mt-4'>
+              <form onSubmit={handleEmailSubmit} className='space-y-3'>
+                {authMode === 'signup' && (
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='auth-name'>Name</Label>
+                    <Input
+                      id='auth-name'
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder='Your name'
+                      className='rounded-xl'
+                    />
+                  </div>
+                )}
+                <div className='space-y-1.5'>
+                  <Label htmlFor='auth-email'>Email</Label>
                   <Input
-                    id='email'
+                    id='auth-email'
                     type='email'
-                    placeholder='your@email.com'
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className='rounded-xl'
                   />
                 </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='password'>Password</Label>
-                  <Input
-                    id='password'
-                    type='password'
+                <div className='space-y-1.5'>
+                  <Label htmlFor='auth-password'>Password</Label>
+                  <PasswordInput
+                    id='auth-password'
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    minLength={6}
+                    className='rounded-xl'
                   />
                 </div>
-                <Button type='submit' className='w-full' disabled={loading}>
+                <Button type='submit' className='w-full rounded-full h-11' disabled={loading}>
                   {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                  Sign In
+                  {authMode === 'signup' ? 'Sign up' : 'Sign in'}
                 </Button>
               </form>
             </TabsContent>
-            <TabsContent value='google' className='space-y-4'>
-              <Button
-                onClick={handleGoogleLogin}
-                className='w-full'
-                variant='outline'
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <Chrome className='mr-2 h-4 w-4' />
-                    Sign in with Google
-                  </>
-                )}
-              </Button>
-            </TabsContent>
-            <TabsContent value='phone' className='space-y-4'>
-              <div id='recaptcha-container' className='hidden' />
+
+            <TabsContent value='phone' className='space-y-4 mt-4'>
+              <div id='auth-recaptcha-container' className='hidden' />
               {!confirmationResult ? (
                 <>
-                  <div className='space-y-2'>
-                    <Label htmlFor='phone'>Phone Number (Ghana)</Label>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='auth-phone'>Phone (Ghana)</Label>
                     <Input
-                      id='phone'
+                      id='auth-phone'
                       type='tel'
                       placeholder='0244123456'
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      required
+                      className='rounded-xl'
                     />
-                    <p className='text-xs text-muted-foreground'>
-                      Enter your Ghana phone number without the country code
-                    </p>
                   </div>
                   <Button
-                    onClick={handlePhoneSendCode}
-                    className='w-full'
+                    className='w-full rounded-full h-11'
+                    onClick={handlePhoneSend}
                     disabled={phoneLoading || !phone}
                   >
-                    {phoneLoading && (
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    )}
-                    Send Verification Code
+                    {phoneLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                    Send code
                   </Button>
                 </>
               ) : (
                 <>
-                  <div className='space-y-2'>
-                    <Label htmlFor='code'>Verification Code</Label>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='auth-code'>Verification code</Label>
                     <Input
-                      id='code'
-                      type='text'
-                      placeholder='123456'
+                      id='auth-code'
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value)}
-                      required
+                      className='rounded-xl'
                     />
                   </div>
                   <Button
-                    onClick={handlePhoneVerifyCode}
-                    className='w-full'
+                    className='w-full rounded-full h-11'
+                    onClick={handlePhoneVerify}
                     disabled={loading || !verificationCode}
                   >
-                    {loading && (
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    )}
-                    Verify Code
-                  </Button>
-                  <Button
-                    variant='outline'
-                    onClick={() => {
-                      setConfirmationResult(null);
-                      setVerificationCode('');
-                    }}
-                    className='w-full'
-                  >
-                    Change Phone Number
+                    {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                    Verify
                   </Button>
                 </>
               )}
             </TabsContent>
           </Tabs>
+
+          <p className='text-center text-sm text-muted-foreground'>
+            {authMode === 'login' ? (
+              <>
+                Don&apos;t have an account?{' '}
+                <button
+                  type='button'
+                  className='underline font-medium text-foreground'
+                  onClick={() => setAuthMode('signup')}
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{' '}
+                <button
+                  type='button'
+                  className='underline font-medium text-foreground'
+                  onClick={() => setAuthMode('login')}
+                >
+                  Sign in
+                </button>
+              </>
+            )}
+          </p>
         </DialogContent>
       </Dialog>
-      {showAdminPasskeyDialog && pendingUser && (
+
+      {showAdminPasskeyDialog && (
         <AdminPasskeyDialog
           open={showAdminPasskeyDialog}
-          onOpenChange={setShowAdminPasskeyDialog}
-          firebaseUser={pendingUser}
           onSuccess={() => {
             setShowAdminPasskeyDialog(false);
             onOpenChange(false);
             router.refresh();
           }}
+          onCancel={() => setShowAdminPasskeyDialog(false)}
         />
       )}
     </>

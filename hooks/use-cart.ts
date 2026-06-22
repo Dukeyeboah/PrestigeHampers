@@ -7,7 +7,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 
-const CART_STORAGE_KEY = 'leetonia_cart';
+const CART_STORAGE_KEY = 'prestige_cart';
 
 export function useCart() {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -158,12 +158,20 @@ export function useCart() {
 
       let newCart: CartItem[];
       if (existing) {
-        // Don't show toast for quantity updates - only for new items
         newCart = prev.map((item) =>
           item.id === product.id ? cartItem : item
         );
+        toast.success(
+          quantity === 1
+            ? `Added 1 more — ${newQuantity} × ${product.name} in cart`
+            : `Added ${quantity} more — ${newQuantity} × ${product.name} in cart`
+        );
       } else {
-        toast.success(`Added ${product.name} to cart`);
+        toast.success(
+          quantity === 1
+            ? `Added 1 × ${product.name} to cart`
+            : `Added ${quantity} × ${product.name} to cart`
+        );
         newCart = [...prev, { ...product, quantity }];
       }
 

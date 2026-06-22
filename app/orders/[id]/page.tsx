@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
-import type { Order } from '@/types';
+import { isShopConfirmed } from '@/lib/order-status';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -107,7 +107,7 @@ export default function OrderVerificationPage() {
     setSubmitting(true);
 
     try {
-      // Update order with delivery and payment info (but keep status as pharmacy_confirmed)
+      // Update order with delivery and payment info (but keep status as shop_confirmed)
       // The status will be updated to customer_confirmed when admin reads the notification
       const updateData: Partial<Order> = {
         deliveryOption,
@@ -180,7 +180,7 @@ export default function OrderVerificationPage() {
       }
 
       toast.success(
-        'Order confirmed! Pharmacy will review and process your order.'
+        'Order confirmed! Prestige Shop will review and process your order.'
       );
       router.push('/orders');
     } catch (error) {
@@ -211,13 +211,13 @@ export default function OrderVerificationPage() {
     );
   }
 
-  // Check if order has already been confirmed (has payment/delivery info but status is still pharmacy_confirmed)
+  // Check if order has already been confirmed (has payment/delivery info but status is still shop_confirmed)
   const isAlreadyConfirmed =
-    order.status === 'pharmacy_confirmed' &&
+    isShopConfirmed(order.status) &&
     (order.paymentMethod || order.deliveryOption);
 
   // Show different views based on order status
-  if (order.status !== 'pharmacy_confirmed' && !isAlreadyConfirmed) {
+  if (!isShopConfirmed(order.status) && !isAlreadyConfirmed) {
     return (
       <div className='space-y-6'>
         <Button variant='ghost' onClick={() => router.push('/orders')}>
@@ -263,11 +263,11 @@ export default function OrderVerificationPage() {
               </div>
               <div className='flex-1'>
                 <h3 className='text-lg font-semibold text-green-900 mb-2'>
-                  Order Confirmed - Awaiting Pharmacy Approval
+                  Order Confirmed — Awaiting Shop Approval
                 </h3>
                 <p className='text-green-800 mb-4'>
                   Your order has been confirmed with the following details. The
-                  pharmacy will review your confirmation and begin processing
+                  Prestige Hampers will review your confirmation and begin processing
                   your order shortly.
                 </p>
 
@@ -420,7 +420,7 @@ export default function OrderVerificationPage() {
                       <span className='font-medium'>Pickup at Store</span>
                     </div>
                     <p className='text-sm text-muted-foreground mt-1'>
-                      Collect your order from Leetonia Wholesale location
+                      Collect your order from Prestige Hampers
                     </p>
                   </Label>
                 </div>

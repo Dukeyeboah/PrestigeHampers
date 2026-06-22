@@ -1,87 +1,78 @@
-# Admin Setup Guide
+# Admin Setup Guide — Prestige Hampers
 
-## Setting Up Admin Users
+## Admin portal passkey (`/admin`)
 
-### Method 1: Email Whitelist + Passkey (Recommended)
+The passkey you enter on the **Admin** login screen is defined here:
 
-1. **Edit `lib/admin-config.ts`** and add admin emails with passkeys:
+**File:** `lib/admin-config.ts`
+
+```typescript
+export const ADMIN_PORTAL_PASSKEY =
+  process.env.NEXT_PUBLIC_ADMIN_PORTAL_PASSKEY || 'Prestige!!';
+```
+
+- **Default passkey:** `Prestige!!`
+- **Optional override:** add to `.env.local`:
+  ```env
+  NEXT_PUBLIC_ADMIN_PORTAL_PASSKEY=YourCustomPasskey
+  ```
+
+After entering the passkey, sign in with **Google** to access the admin dashboard.
+
+---
+
+## Setting up admin users
+
+### Method 1: `/admin` portal (recommended)
+
+1. Go to `/admin`
+2. Enter passkey: `Prestige!!` (unless you changed it in `lib/admin-config.ts`)
+3. Sign in with Google — your account is granted `admin` role in Firestore
+
+### Method 2: Email whitelist + per-user passkey (legacy login flow)
+
+Edit `lib/admin-config.ts` → `ADMIN_WHITELIST`:
 
 ```typescript
 export const ADMIN_WHITELIST: AdminConfig[] = [
   {
-    email: 'admin@leetonia.com',
-    passkey: 'ADMIN2024',
-    name: 'Pharmacy Manager',
-  },
-  {
-    email: 'manager@leetonia.com',
-    passkey: 'MGR2024',
-    name: 'Store Manager',
+    email: 'you@example.com',
+    passkey: 'YourPersonalPasskey',
+    name: 'Your Name',
   },
 ];
 ```
 
-2. **When an admin logs in:**
-   - If their email is in the whitelist, they'll be prompted for their passkey
-   - After entering the correct passkey, their role is updated to `admin` in Firestore
-   - They gain access to admin features
+When a whitelisted email signs in via `/login`, they are prompted for their personal passkey.
 
-### Method 2: Manual Firestore Update
+### Method 3: Manual Firestore update
 
-1. Go to Firebase Console > Firestore Database
-2. Navigate to `users` collection
-3. Find the user document
-4. Edit the document and set `role` field to `"admin"`
-5. Save
+1. Firebase Console → Firestore → `users` collection
+2. Open the user document → set `role` to `"admin"` → Save
 
-## Admin Features
+---
 
-### View Toggle
+## Admin features
 
-Admins can switch between:
+- **Import sample products** — Manage Inventory → Import 22 sample products
+- **Manage inventory** — add, edit, hide, delete products with images
+- **Orders & analytics** — view orders, update status, revenue stats
+- **View toggle** (sidebar) — switch between admin and client views
 
-- **Admin View**: Access to admin dashboard, inventory management, order management
-- **Client View**: Browse inventory, add to cart, place orders (like regular clients)
+---
 
-Toggle is available in the sidebar.
+## Security notes
 
-### Admin Dashboard
+- Change the default passkey before going to production
+- Prefer `NEXT_PUBLIC_ADMIN_PORTAL_PASSKEY` in `.env.local` (never commit secrets you care about)
+- Publish `firestore.rules` and `storage.rules` from this repo after changes
 
-- View all orders
-- Manage inventory (add, edit, delete products)
-- Update order statuses
-- Track stock levels
+---
 
-## Security Notes
+## Firestore index for orders
 
-- **Passkeys are stored in code** - For production, consider:
+Create composite index on `orders`:
+- `userId` (Ascending)
+- `createdAt` (Descending)
 
-  - Moving to environment variables
-  - Storing in Firestore (with proper security rules)
-  - Using Firebase Custom Claims
-  - Implementing a more robust authentication system
-
-- **Admin emails are case-insensitive** - Matching is done by lowercase comparison
-
-- **Passkeys are case-sensitive** - Must match exactly
-
-## Firestore Index for Orders
-
-The orders query requires a composite index. When you see the error:
-
-1. Click the link provided in the error message
-2. Or manually create in Firebase Console:
-   - Go to Firestore > Indexes
-   - Create composite index:
-     - Collection: `orders`
-     - Fields: `userId` (Ascending), `createdAt` (Descending)
-
-## Inventory Fields
-
-Products now include:
-
-- `imageUrl` - URL for product image (can be empty)
-- `expiryDate` - Unix timestamp for expiry date
-- `code` - Product code from your inventory list
-
-These fields are included in the seed script and can be edited in the admin dashboard.
+Firebase will provide a link in the console if the index is missing.

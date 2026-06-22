@@ -2,7 +2,7 @@
  * Helper functions for creating and managing notifications
  */
 
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, getDocs, query, where, collection } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Notification } from '@/types';
 
@@ -33,6 +33,55 @@ export async function createNotification(
   }
 }
 
+export async function createAdminNewOrderAlert(
+  orderId: string,
+  summary: string
+): Promise<void> {
+  if (!db) return;
+
+  try {
+    await addDoc(collection(db, 'admin_alerts'), {
+      orderId,
+      message: summary,
+      read: false,
+      createdAt: Date.now(),
+    });
+  } catch (error) {
+    console.error('Error creating admin order alert:', error);
+  }
+}
+
+export async function notifyAdminsOfNewOrder(
+  orderId: string,
+  customerLabel: string,
+  total: number,
+  itemCount: number
+): Promise<void> {
+  const summary = `New order #${orderId.slice(0, 8)} from ${customerLabel} — ${itemCount} item(s), ₵${total.toFixed(2)}`;
+  await createAdminNewOrderAlert(orderId, summary);
+
+  if (!db) return;
+
+  try {
+    const adminsSnap = await getDocs(
+      query(collection(db, 'users'), where('role', '==', 'admin'))
+    );
+    await Promise.all(
+      adminsSnap.docs.map((adminDoc) =>
+        createNotification(
+          adminDoc.id,
+          'admin_message',
+          'New order received',
+          summary,
+          orderId
+        )
+      )
+    );
+  } catch {
+    // Guest checkout cannot query users — admin_alerts still notifies via dashboard
+  }
+}
+
 export async function createOrderStatusNotification(
   userId: string,
   orderId: string,
@@ -40,12 +89,12 @@ export async function createOrderStatusNotification(
   orderItems: Array<{ name: string; quantity: number }>
 ): Promise<void> {
   const statusMessages: Record<string, { title: string; message: string }> = {
-    pharmacy_confirmed: {
+    shop_confirmed: {
       title: 'Order Ready for Verification',
       message: `Your order #${orderId.slice(
         0,
         8
-      )} has been confirmed by the pharmacy. Please review and confirm the items: ${orderItems
+      )} has been confirmed by Prestige Shop. Please review and confirm the items: ${orderItems
         .map((i) => `${i.quantity}x ${i.name}`)
         .join(', ')}`,
     },
@@ -76,7 +125,8 @@ export async function createOrderStatusNotification(
     },
   };
 
-  const statusInfo = statusMessages[status];
+  const statusKey = status === 'pharmacy_confirmed' ? 'shop_confirmed' : status;
+  const statusInfo = statusMessages[statusKey];
   if (statusInfo) {
     await createNotification(
       userId,

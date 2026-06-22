@@ -1,5 +1,6 @@
 'use client';
 
+import { isShopConfirmed } from '@/lib/order-status';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useNotifications } from '@/hooks/use-notifications';
@@ -65,8 +66,8 @@ export default function NotificationsPage() {
       );
       if (orderDoc.exists()) {
         const orderData = orderDoc.data();
-        // Only update if order is still in pharmacy_confirmed status
-        if (orderData.status === 'pharmacy_confirmed') {
+        // Only update if order is still in shop_confirmed status
+        if (isShopConfirmed(orderData.status)) {
           await updateDoc(doc(db, 'orders', pendingNotification.orderId!), {
             status: 'customer_confirmed',
             updatedAt: Date.now(),
@@ -80,7 +81,7 @@ export default function NotificationsPage() {
             `Your order #${pendingNotification.orderId!.slice(
               0,
               8
-            )} has been approved and confirmed by the pharmacy. We'll begin processing it shortly.`,
+            )} has been approved and confirmed by Prestige Shop. We'll begin processing it shortly.`,
             pendingNotification.orderId!
           );
 

@@ -1,114 +1,54 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useInventory } from '@/hooks/use-inventory';
-import { useCart } from '@/hooks/use-cart'; // Import useCart
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useShopCatalog } from '@/hooks/use-shop-catalog';
+import { useCart } from '@/hooks/use-cart';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, WifiOff, ChevronDown } from 'lucide-react';
+import { Search, WifiOff, Gift, Package } from 'lucide-react';
 import { ProductCard } from '@/components/product-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { Product } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { PRODUCT_CATEGORIES } from '@/lib/categories';
-import { collection, getDocs } from "firebase/firestore";
-import { db } from '@/lib/firebase';
 
-async function debugCheck() {
-  const snapshot = await getDocs(collection(db, "inventory"));
-  console.log("MY TOTAL DOCS:", snapshot.size);
-  console.log("debugcheck side PROJECT ID:", db.app.options.projectId);
+const PAGE_SIZE = 16;
 
-  snapshot.forEach(doc => {
-    console.log("DOC:", doc.id);
-  });
-}
-
-debugCheck();
-
-// useEffect(() => {
-//   debugCheck();
-// }, []);
-
-const INITIAL_PAGE_SIZE = 50;
-const LOAD_MORE_SIZE = 50;
-
-const LETTER_OPTIONS = [
-  'all',
-  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-  '0-9',
-] as const;
-type LetterFilter = (typeof LETTER_OPTIONS)[number];
-
-function getFirstCharacterGroup(name: string): string {
-  const first = (name || '').trim()[0];
-  if (!first) return '';
-  if (/\d/.test(first)) return '0-9';
-  const upper = first.toUpperCase();
-  return /[A-Z]/.test(upper) ? upper : '';
-}
+type CatalogTab = 'hampers' | 'products';
 
 export default function InventoryPage() {
-  const { products, loading, offline } = useInventory();
-  const { addToCart } = useCart(); // Use hook
+  const searchParams = useSearchParams();
+  const initialTab =
+    searchParams.get('tab') === 'products' ? 'products' : 'hampers';
+
+  const { hampers, products, loading, offline } = useShopCatalog();
+  const { addToCart } = useCart();
+  const [catalogTab, setCatalogTab] = useState<CatalogTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [letterFilter, setLetterFilter] = useState<LetterFilter>('all');
-  const [isMounted, setIsMounted] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(INITIAL_PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-
-  
-  console.log("Inventory loading:", loading);
-console.log("Products:", products.length);
-console.log("Offline:", offline);
-
-  // Fix hydration errors by only rendering Select after mount
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    setCatalogTab(initialTab);
+  }, [initialTab]);
 
-  // Reset to first page when search, category, or letter changes
   useEffect(() => {
-    setVisibleCount(INITIAL_PAGE_SIZE);
-  }, [searchQuery, categoryFilter, letterFilter]);
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, catalogTab]);
 
-  // Always use products from Firebase/IndexedDB - don't fall back to mock data
-  // Mock data is only for development/testing when no data is seeded
-  // Filter out hidden products (only show to customers if not hidden)
-   const displayProducts = products.filter((p) => !p.isHidden);
-  //const displayProducts = products.filter((p) => p.isHidden !== true);
+  const sourceItems = catalogTab === 'hampers' ? hampers : products;
 
-  console.log("RAW PRODUCTS:", products.length);
-  console.log("FIRST RAW:", products[0]);
-  console.log("DISPLAY PRODUCTS:", displayProducts.length);
-  
-
-  // Get unique categories from products, merge with predefined categories
-  const productCategories = Array.from(
-    new Set(displayProducts.map((p) => p.category).filter(Boolean))
-  );
-  const allCategories = new Set([...PRODUCT_CATEGORIES, ...productCategories]);
-  const categories = ['all', ...Array.from(allCategories).sort()];
-
-  const filteredProducts = displayProducts.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      categoryFilter === 'all' || product.category === categoryFilter;
-    const matchesLetter =
-      letterFilter === 'all' ||
-      getFirstCharacterGroup(product.name || '') === letterFilter;
-    return matchesSearch && matchesCategory && matchesLetter;
-  });
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return sourceItems.filter((product) => {
+      if (product.isHidden) return false;
+      if (!q) return true;
+      return (
+        product.name.toLowerCase().includes(q) ||
+        product.description?.toLowerCase().includes(q) ||
+        product.category?.toLowerCase().includes(q)
+      );
+    });
+  }, [sourceItems, searchQuery]);
 
   const productsToShow = filteredProducts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredProducts.length;
@@ -118,118 +58,108 @@ console.log("Offline:", offline);
   };
 
   return (
-    <div className='space-y-8'>
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
-        <div>
-          <h1 className='text-3xl font-serif font-bold text-primary'>
-            Inventory
-          </h1>
-          <p className='text-muted-foreground mt-1'>
-            Browse available stock for order.
-          </p>
+    <div className='space-y-6 md:space-y-8'>
+      <div className='space-y-1 text-center'>
+        <h1 className='text-2xl md:text-3xl font-semibold tracking-tight text-foreground'>
+          {catalogTab === 'hampers' ? 'Hampers' : 'Products'}
+        </h1>
+        <p className='text-sm text-muted-foreground max-w-lg mx-auto'>
+          {catalogTab === 'hampers'
+            ? 'Curated gift hampers for every occasion.'
+            : 'Premium individual gifts and treats from our collection.'}
+        </p>
+      </div>
+
+      <div className='flex justify-center'>
+        <div className='inline-flex rounded-full border border-neutral-200 bg-neutral-50 p-1'>
+          <button
+            type='button'
+            onClick={() => setCatalogTab('hampers')}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-full transition-colors ${
+              catalogTab === 'hampers'
+                ? 'bg-neutral-900 text-white shadow-sm'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            <Gift className='h-3.5 w-3.5' />
+            Hampers
+          </button>
+          <button
+            type='button'
+            onClick={() => setCatalogTab('products')}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-full transition-colors ${
+              catalogTab === 'products'
+                ? 'bg-neutral-900 text-white shadow-sm'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            <Package className='h-3.5 w-3.5' />
+            Products
+          </button>
         </div>
-        {offline && products.length === 0 && (
+      </div>
+
+      <div className='relative max-w-xl mx-auto w-full'>
+        <Search className='absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+        <Input
+          placeholder={
+            catalogTab === 'hampers'
+              ? 'Search hampers...'
+              : 'Search products...'
+          }
+          className='pl-11 h-12 rounded-full bg-neutral-50 border-neutral-200 focus-visible:ring-neutral-300'
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {offline && products.length === 0 && catalogTab === 'products' && (
+        <div className='flex justify-center'>
           <Badge
             variant='outline'
-            className='bg-yellow-50/50 text-yellow-700 border-yellow-200 w-fit flex gap-1.5 items-center px-3 py-1'
+            className='bg-yellow-50/50 text-yellow-700 border-yellow-200 flex gap-1.5 items-center px-3 py-1'
           >
             <WifiOff className='h-3 w-3' />
             Offline Mode
           </Badge>
-        )}
-      </div>
-
-      <div className='flex flex-col md:flex-row gap-4 bg-card p-4 rounded-lg shadow-sm border'>
-        {/* <div className='relative md:max-w- flex-1'> */}
-        <div className='relative flex-1'>
-          <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-          <Input
-            placeholder='Search medicines...'
-            className='pl-9 bg-background border-border/60'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
         </div>
-        {isMounted ? (
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className='w-full md:w-[280px] bg-background border-border/60 overflow-hidden'>
-              <div className='flex items-center gap-2 text-muted-foreground min-w-0 flex-1 overflow-hidden'>
-                <Filter className='h-4 w-4 flex-shrink-0' />
-                <SelectValue
-                  placeholder='Category'
-                  className='truncate min-w-0 flex-1'
-                />
-              </div>
-            </SelectTrigger>
-            <SelectContent className='max-w-[280px]'>
-              {categories.map((cat) => (
-                <SelectItem
-                  key={cat}
-                  value={cat}
-                  className='truncate pr-8'
-                  title={cat}
-                >
-                  {cat === 'all' ? 'All Categories' : cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <div className='w-full md:w-[280px] h-10 bg-background border border-border/60 rounded-md flex items-center gap-2 px-3 text-muted-foreground'>
-            <Filter className='h-4 w-4' />
-            <span>Category</span>
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Alphabetical filter */}
-      <div className='flex flex-wrap items-center gap-2'>
-        <span className='text-sm text-muted-foreground shrink-0'>Starts with:</span>
-        <div className='flex flex-wrap gap-1.5'>
-          {LETTER_OPTIONS.map((letter) => (
-            <Button
-              key={letter}
-              variant={letterFilter === letter ? 'default' : 'outline'}
-              size='sm'
-              className='min-w-[2rem] h-8 px-2 font-medium'
-              onClick={() => setLetterFilter(letter)}
-            >
-              {letter === 'all' ? 'All' : letter}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6'>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className='h-[320px] w-full rounded-lg' />
+      {loading && catalogTab === 'products' ? (
+        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-8'>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className='aspect-[3/4] w-full rounded-2xl' />
           ))}
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className='text-center py-20'>
-          <div className='bg-muted/30 inline-flex p-6 rounded-full mb-4'>
-            <Search className='h-10 w-10 text-muted-foreground/50' />
-          </div>
-          <h3 className='text-lg font-serif font-medium'>No products found</h3>
-          <p className='text-muted-foreground'>
-            Try adjusting your search or filters.
+        <div className='text-center py-16 md:py-24 space-y-3 px-4'>
+          <p className='text-lg font-medium text-foreground'>
+            {sourceItems.length === 0 && !searchQuery
+              ? catalogTab === 'hampers'
+                ? 'No hampers available'
+                : 'No products in the shop yet'
+              : 'No results found'}
           </p>
-          <Button
-            variant='link'
-            className='mt-2'
-            onClick={() => {
-              setSearchQuery('');
-              setCategoryFilter('all');
-              setLetterFilter('all');
-            }}
-          >
-            Clear all filters
-          </Button>
+          <p className='text-sm text-muted-foreground max-w-md mx-auto'>
+            {catalogTab === 'products' &&
+            sourceItems.length === 0 &&
+            !searchQuery
+              ? 'Products are loaded from Firestore. An admin can import the catalog from the Admin dashboard.'
+              : 'Try a different search term or switch categories.'}
+          </p>
+          {searchQuery && (
+            <Button
+              variant='link'
+              className='mt-3'
+              onClick={() => setSearchQuery('')}
+            >
+              Clear search
+            </Button>
+          )}
         </div>
       ) : (
-        <div className='space-y-6'>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6'>
+        <div className='space-y-10'>
+          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-10'>
             {productsToShow.map((product) => (
               <ProductCard
                 key={product.id}
@@ -238,22 +168,19 @@ console.log("Offline:", offline);
               />
             ))}
           </div>
-          {filteredProducts.length > INITIAL_PAGE_SIZE && (
-            <div className='flex flex-col items-center gap-3 pt-4'>
-              <p className='text-sm text-muted-foreground'>
-                Showing {productsToShow.length} of {filteredProducts.length} products
+
+          {hasMore && (
+            <div className='flex flex-col items-center gap-2 pt-4'>
+              <p className='text-xs text-muted-foreground'>
+                Showing {productsToShow.length} of {filteredProducts.length}
               </p>
-              {hasMore && (
-                <Button
-                  variant='outline'
-                  size='lg'
-                  onClick={() => setVisibleCount((prev) => prev + LOAD_MORE_SIZE)}
-                  className='gap-2'
-                >
-                  <ChevronDown className='h-4 w-4' />
-                  Show more ({Math.min(LOAD_MORE_SIZE, filteredProducts.length - visibleCount)} more)
-                </Button>
-              )}
+              <Button
+                variant='outline'
+                className='rounded-full px-8 h-11'
+                onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+              >
+                Load more
+              </Button>
             </div>
           )}
         </div>

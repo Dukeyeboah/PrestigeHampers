@@ -1,5 +1,5 @@
 // Simple Promise wrapper for IndexedDB
-const DB_NAME = "PharmacyOfflineDB"
+const DB_NAME = 'PrestigeOfflineDB';
 const DB_VERSION = 1
 const STORES = ["inventory", "orders", "cart", "sync_queue"]
 
