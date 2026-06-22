@@ -69,9 +69,10 @@ export function ProductCarousel({
           {carouselItems.map((product, index) => {
             const imageSrc = resolveProductImageUrl(product);
             return (
-            <div
+            <Link
               key={`${product.id}-${index}`}
-              className='group flex-shrink-0 w-[150px] sm:w-[200px] md:w-[260px]'
+              href='/products'
+              className='group flex-shrink-0 w-[150px] sm:w-[200px] md:w-[260px] cursor-pointer'
             >
               <div className='relative aspect-[4/5] rounded-2xl overflow-hidden bg-neutral-100 shadow-sm transition-transform duration-300 group-hover:scale-[1.02]'>
                 {imageSrc ? (
@@ -96,14 +97,14 @@ export function ProductCarousel({
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
             );
           })}
 
           {/* See more card */}
           <Link
             href='/products'
-            className='flex-shrink-0 w-[150px] sm:w-[200px] md:w-[260px] flex items-center justify-center'
+            className='flex-shrink-0 w-[150px] sm:w-[200px] md:w-[260px] flex items-center justify-center cursor-pointer'
           >
             <div className='flex flex-col items-center justify-center gap-3 w-full aspect-[4/5] rounded-2xl border border-dashed border-neutral-300 bg-white/60 backdrop-blur-sm transition-all hover:border-neutral-400 hover:bg-white/80'>
               <div className='h-12 w-12 rounded-full bg-neutral-900 flex items-center justify-center'>
