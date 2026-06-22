@@ -2,6 +2,7 @@
 node_modules/
 .pnp.cjs
 .pnp.loader.mjs
+package-lock.json
 
 ## Next.js build output
 .next/
