@@ -2,13 +2,14 @@
 
 import { isShopConfirmed, formatOrderStatus } from '@/lib/order-status';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   query,
   orderBy,
   onSnapshot,
   doc,
   updateDoc,
+  setDoc,
   addDoc,
   deleteDoc,
 } from 'firebase/firestore';
@@ -63,6 +64,8 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Gift,
+  Package,
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -71,6 +74,12 @@ import type { User } from '@/types';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
 import { createOrderStatusNotification } from '@/lib/notifications';
 import { resolveProductImageUrl } from '@/lib/product-image';
+import {
+  mergeAdminInventory,
+  filterInventoryByCatalog,
+  isHamperItem,
+  type InventoryCatalogFilter,
+} from '@/lib/admin-inventory';
 import { seedPrestigeInventory } from '@/lib/seed-inventory';
 import { AdminPortalGate } from '@/components/admin-portal-gate';
 import { useAuth } from '@/lib/auth-context';
@@ -90,6 +99,8 @@ function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('inventory');
   const [inventoryViewMode, setInventoryViewMode] = useState<'grid' | 'list'>('grid');
+  const [inventoryCatalogFilter, setInventoryCatalogFilter] =
+    useState<InventoryCatalogFilter>('hampers');
   const prevOrderCountRef = useRef<number | null>(null);
 
   // Product Form State
@@ -185,6 +196,23 @@ function AdminDashboard() {
       unsubInventory();
     };
   }, []);
+
+  const mergedInventory = useMemo(
+    () => mergeAdminInventory(products),
+    [products]
+  );
+
+  const filteredInventory = useMemo(
+    () => filterInventoryByCatalog(mergedInventory, inventoryCatalogFilter),
+    [mergedInventory, inventoryCatalogFilter]
+  );
+
+  const firestoreProductCount = useMemo(
+    () => products.filter((p) => !isHamperItem(p)).length,
+    [products]
+  );
+
+  const isInFirestore = (id: string) => products.some((p) => p.id === id);
 
   const openOrderEditDialog = (order: Order) => {
     setEditingOrder(order);
@@ -469,8 +497,12 @@ Thank you for your business!
       });
 
       if (editingProduct) {
-        await updateDoc(doc(db, 'inventory', editingProduct.id), productData);
-        toast.success('Product updated');
+        await setDoc(
+          doc(db, 'inventory', editingProduct.id),
+          { ...productData, id: editingProduct.id },
+          { merge: true }
+        );
+        toast.success(isHamperItem(editingProduct) ? 'Hamper updated' : 'Product updated');
       } else {
         await addDoc(collection(db, 'inventory'), productData);
         toast.success('Product added');
@@ -504,14 +536,21 @@ Thank you for your business!
   }>({ open: false, productId: null, productName: '' });
 
   const handleDeleteProduct = async (id: string) => {
-    const product = products.find((p) => p.id === id);
-    if (product) {
-      setDeleteConfirmDialog({
-        open: true,
-        productId: id,
-        productName: product.name,
-      });
+    const product = mergedInventory.find((p) => p.id === id);
+    if (!product) return;
+
+    if (isHamperItem(product) && !isInFirestore(id)) {
+      toast.info(
+        'Catalog hampers cannot be deleted. Use hide to remove them from the shop.'
+      );
+      return;
     }
+
+    setDeleteConfirmDialog({
+      open: true,
+      productId: id,
+      productName: product.name,
+    });
   };
 
   const confirmDeleteProduct = async () => {
@@ -535,18 +574,23 @@ Thank you for your business!
     }
     try {
       const isHidden = product.isHidden || false;
-      await updateDoc(doc(db, 'inventory', product.id), {
-        isHidden: !isHidden,
-        updatedAt: Date.now(),
-      });
+      await setDoc(
+        doc(db, 'inventory', product.id),
+        {
+          ...product,
+          isHidden: !isHidden,
+          updatedAt: Date.now(),
+        },
+        { merge: true }
+      );
       toast.success(
         !isHidden
-          ? 'Product hidden from customers'
-          : 'Product made visible to customers'
+          ? `${isHamperItem(product) ? 'Hamper' : 'Product'} hidden from customers`
+          : `${isHamperItem(product) ? 'Hamper' : 'Product'} made visible to customers`
       );
     } catch (error) {
       console.error('Error toggling product visibility:', error);
-      toast.error('Failed to update product visibility');
+      toast.error('Failed to update visibility');
     }
   };
 
@@ -813,7 +857,7 @@ Thank you for your business!
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>{products.length}</div>
+            <div className='text-2xl font-bold'>{mergedInventory.length}</div>
           </CardContent>
         </Card>
       </div>
@@ -1613,36 +1657,58 @@ Thank you for your business!
         </TabsContent>
 
         <TabsContent value='inventory' className='mt-6 space-y-4'>
-          <div className='flex items-center justify-between'>
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
             <h2 className='text-lg font-semibold'>Manage Inventory</h2>
-            <div className='flex items-center gap-1 rounded-lg border p-1 bg-white'>
-              <Button
-                variant={inventoryViewMode === 'grid' ? 'default' : 'ghost'}
-                size='sm'
-                className='h-8 px-3'
-                onClick={() => setInventoryViewMode('grid')}
-              >
-                <LayoutGrid className='h-4 w-4 mr-1.5' />
-                Grid
-              </Button>
-              <Button
-                variant={inventoryViewMode === 'list' ? 'default' : 'ghost'}
-                size='sm'
-                className='h-8 px-3'
-                onClick={() => setInventoryViewMode('list')}
-              >
-                <List className='h-4 w-4 mr-1.5' />
-                List
-              </Button>
+            <div className='flex flex-wrap items-center gap-2'>
+              <div className='inline-flex rounded-lg border p-1 bg-white'>
+                <Button
+                  variant={inventoryCatalogFilter === 'hampers' ? 'default' : 'ghost'}
+                  size='sm'
+                  className='h-8 px-3'
+                  onClick={() => setInventoryCatalogFilter('hampers')}
+                >
+                  <Gift className='h-3.5 w-3.5 mr-1.5' />
+                  Hampers
+                </Button>
+                <Button
+                  variant={inventoryCatalogFilter === 'products' ? 'default' : 'ghost'}
+                  size='sm'
+                  className='h-8 px-3'
+                  onClick={() => setInventoryCatalogFilter('products')}
+                >
+                  <Package className='h-3.5 w-3.5 mr-1.5' />
+                  Products
+                </Button>
+              </div>
+              <div className='flex items-center gap-1 rounded-lg border p-1 bg-white'>
+                <Button
+                  variant={inventoryViewMode === 'grid' ? 'default' : 'ghost'}
+                  size='sm'
+                  className='h-8 px-3'
+                  onClick={() => setInventoryViewMode('grid')}
+                >
+                  <LayoutGrid className='h-4 w-4 mr-1.5' />
+                  Grid
+                </Button>
+                <Button
+                  variant={inventoryViewMode === 'list' ? 'default' : 'ghost'}
+                  size='sm'
+                  className='h-8 px-3'
+                  onClick={() => setInventoryViewMode('list')}
+                >
+                  <List className='h-4 w-4 mr-1.5' />
+                  List
+                </Button>
+              </div>
             </div>
           </div>
 
-          {products.length === 0 && (
+          {inventoryCatalogFilter === 'products' && firestoreProductCount === 0 && (
             <div className='rounded-xl border border-dashed p-8 text-center space-y-3'>
               <p className='text-muted-foreground text-sm'>
-                No products in Firestore yet. Storage images alone are not enough —
-                click below to create 22 inventory documents linked to{' '}
-                <code className='text-xs'>products/1.jpg … 22.jpg</code>.
+                No individual products in Firestore yet. Import the sample catalog
+                to create 22 product documents linked to{' '}
+                <code className='text-xs'>/images/products/1.jpg … 22.jpg</code>.
               </p>
               <Button
                 onClick={handleImportSampleProducts}
@@ -1653,177 +1719,193 @@ Thank you for your business!
             </div>
           )}
 
-          {inventoryViewMode === 'grid' ? (
+          {filteredInventory.length === 0 ? (
+            <div className='rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground'>
+              No {inventoryCatalogFilter} to display.
+            </div>
+          ) : inventoryViewMode === 'grid' ? (
             <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-              {products.map((product) => (
-                <div
-                  key={product.id}
-                  className={`rounded-xl border bg-white overflow-hidden ${
-                    product.isHidden ? 'opacity-60' : ''
-                  }`}
-                >
-                  <div className='aspect-square bg-neutral-100 relative'>
-                    {resolveProductImageUrl(product) ? (
-                      <img
-                        src={resolveProductImageUrl(product)}
-                        alt={product.name}
-                        className='w-full h-full object-cover'
-                      />
-                    ) : (
-                      <div className='w-full h-full flex items-center justify-center text-neutral-300 text-3xl font-serif'>
-                        {product.name.charAt(0)}
-                      </div>
-                    )}
-                    {product.isHidden && (
-                      <span className='absolute top-2 left-2 text-[10px] bg-neutral-900 text-white px-2 py-0.5 rounded-full'>
-                        Hidden
-                      </span>
-                    )}
-                  </div>
-                  <div className='p-3 space-y-2'>
-                    <p className='font-medium text-sm line-clamp-2'>{product.name}</p>
-                    <div className='flex justify-between text-xs text-muted-foreground'>
-                      <span>₵{product.price.toFixed(2)}</span>
-                      <span>{product.stock} in stock</span>
+              {filteredInventory.map((product) => {
+                const imageSrc = resolveProductImageUrl(product);
+                return (
+                  <div
+                    key={product.id}
+                    className={`rounded-xl border bg-white overflow-hidden ${
+                      product.isHidden ? 'opacity-60' : ''
+                    }`}
+                  >
+                    <div className='aspect-square bg-neutral-100 relative'>
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={product.name}
+                          className='w-full h-full object-cover'
+                        />
+                      ) : (
+                        <div className='w-full h-full flex items-center justify-center text-neutral-300 text-3xl font-serif'>
+                          {product.name.charAt(0)}
+                        </div>
+                      )}
+                      {product.isHidden && (
+                        <span className='absolute top-2 left-2 text-[10px] bg-neutral-900 text-white px-2 py-0.5 rounded-full'>
+                          Hidden
+                        </span>
+                      )}
+                      {isHamperItem(product) && (
+                        <span className='absolute top-2 right-2 text-[10px] bg-neutral-900/80 text-white px-2 py-0.5 rounded-full'>
+                          Hamper
+                        </span>
+                      )}
                     </div>
-                    <div className='flex gap-1 pt-1'>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        className='flex-1 h-8 text-xs'
-                        onClick={() => openProductDialog(product)}
+                    <div className='p-3 space-y-2'>
+                      <p className='font-medium text-sm line-clamp-2'>{product.name}</p>
+                      <div className='flex justify-between text-xs text-muted-foreground'>
+                        <span>₵{product.price.toFixed(2)}</span>
+                        <span>{product.stock} in stock</span>
+                      </div>
+                      <div className='flex gap-1 pt-1'>
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          className='flex-1 h-8 text-xs'
+                          onClick={() => openProductDialog(product)}
+                        >
+                          <Edit className='h-3 w-3 mr-1' />
+                          Edit
+                        </Button>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='h-8 w-8 shrink-0'
+                          onClick={() => handleToggleProductVisibility(product)}
+                        >
+                          {product.isHidden ? (
+                            <EyeOff className='h-3.5 w-3.5' />
+                          ) : (
+                            <Eye className='h-3.5 w-3.5' />
+                          )}
+                        </Button>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='h-8 w-8 shrink-0 text-destructive'
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          <Trash2 className='h-3.5 w-3.5' />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className='rounded-md border bg-card overflow-x-auto'>
+              <div className='flex items-center gap-2 px-3 py-2.5 border-b text-xs font-medium text-muted-foreground bg-muted/20 min-w-[640px]'>
+                <div className='w-14 shrink-0 hidden sm:block'>Image</div>
+                <div className='flex-[2] min-w-[120px]'>Name</div>
+                <div className='w-20 shrink-0 hidden md:block'>Category</div>
+                <div className='w-[72px] shrink-0 text-right'>Price</div>
+                <div className='w-12 shrink-0 text-center'>Stock</div>
+                <div className='w-[108px] shrink-0 text-right'>Actions</div>
+              </div>
+              {filteredInventory.map((product) => {
+                const imageSrc = resolveProductImageUrl(product);
+                return (
+                  <div
+                    key={product.id}
+                    className={`flex items-center gap-2 px-3 py-2.5 border-b last:border-0 min-h-[60px] min-w-[640px] text-sm hover:bg-muted/5 transition-colors ${
+                      product.isHidden ? 'opacity-60 bg-muted/20' : ''
+                    }`}
+                  >
+                    <div className='w-14 h-14 shrink-0 hidden sm:block rounded-lg overflow-hidden bg-muted'>
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={product.name}
+                          className='h-full w-full object-cover'
+                        />
+                      ) : (
+                        <div className='h-full w-full flex items-center justify-center text-xs text-muted-foreground'>
+                          {product.name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className='flex-[2] min-w-[120px] font-medium flex items-center gap-1.5 min-w-0'
+                      title={product.name}
+                    >
+                      {product.isHidden && (
+                        <Badge variant='secondary' className='text-[10px] px-1.5 py-0 shrink-0'>
+                          Hidden
+                        </Badge>
+                      )}
+                      <span className='truncate'>{product.name}</span>
+                    </div>
+                    <div
+                      className='w-20 shrink-0 hidden md:block text-xs text-muted-foreground truncate'
+                      title={product.category}
+                    >
+                      {product.category}
+                    </div>
+                    <div className='w-[72px] shrink-0 text-right tabular-nums'>
+                      ₵{product.price.toFixed(2)}
+                    </div>
+                    <div className='w-12 shrink-0 flex justify-center'>
+                      <Badge
+                        variant={
+                          product.stock === 0
+                            ? 'destructive'
+                            : product.stock < 10
+                            ? 'secondary'
+                            : 'outline'
+                        }
+                        className={`text-xs px-1.5 ${
+                          product.stock < 10 && product.stock > 0
+                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
+                            : ''
+                        }`}
                       >
-                        <Edit className='h-3 w-3 mr-1' />
-                        Edit
+                        {product.stock}
+                      </Badge>
+                    </div>
+                    <div className='w-[108px] shrink-0 flex justify-end items-center gap-0.5'>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-8 w-8'
+                        onClick={() => openProductDialog(product)}
+                        title='Edit'
+                      >
+                        <Edit className='h-4 w-4' />
                       </Button>
                       <Button
                         variant='ghost'
                         size='icon'
                         className='h-8 w-8'
                         onClick={() => handleToggleProductVisibility(product)}
+                        title={product.isHidden ? 'Show' : 'Hide'}
                       >
                         {product.isHidden ? (
-                          <EyeOff className='h-3.5 w-3.5' />
+                          <EyeOff className='h-4 w-4' />
                         ) : (
-                          <Eye className='h-3.5 w-3.5' />
+                          <Eye className='h-4 w-4' />
                         )}
                       </Button>
                       <Button
                         variant='ghost'
                         size='icon'
-                        className='h-8 w-8 text-destructive'
+                        className='h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10'
                         onClick={() => handleDeleteProduct(product.id)}
+                        title='Delete'
                       >
-                        <Trash2 className='h-3.5 w-3.5' />
+                        <Trash2 className='h-4 w-4' />
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          ) : (
-          <div className='rounded-md border bg-card'>
-            <div className='grid grid-cols-12 gap-4 p-4 border-b font-medium text-sm text-muted-foreground bg-muted/20'>
-              <div className='col-span-2 hidden md:block'>Image</div>
-              <div className='col-span-4 md:col-span-3'>Name</div>
-              <div className='col-span-3 md:col-span-2'>Category</div>
-              <div className='col-span-2 md:col-span-2 text-right'>Price</div>
-              <div className='col-span-2 md:col-span-1 text-center'>Stock</div>
-              <div className='col-span-1 md:col-span-2 text-right'>Actions</div>
-            </div>
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className={`grid grid-cols-12 gap-4 p-4 border-b last:border-0 items-center text-sm hover:bg-muted/5 transition-colors ${
-                  product.isHidden ? 'opacity-60 bg-muted/20' : ''
-                }`}
-              >
-                <div className='col-span-2 hidden md:block'>
-                  <div className='h-12 w-12 rounded-lg overflow-hidden bg-muted'>
-                    {resolveProductImageUrl(product) ? (
-                      <img
-                        src={resolveProductImageUrl(product)}
-                        alt={product.name}
-                        className='h-full w-full object-cover'
-                      />
-                    ) : (
-                      <div className='h-full w-full flex items-center justify-center text-xs text-muted-foreground'>
-                        {product.name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div
-                  className='col-span-4 md:col-span-3 font-medium truncate flex items-center gap-2'
-                  title={product.name}
-                >
-                  {product.isHidden && (
-                    <Badge variant='secondary' className='text-xs'>
-                      Hidden
-                    </Badge>
-                  )}
-                  <span>{product.name}</span>
-                </div>
-                <div className='col-span-3 md:col-span-2 truncate'>
-                  {product.category}
-                </div>
-                <div className='col-span-2 md:col-span-2 text-right'>
-                  ₵{product.price.toFixed(2)}
-                </div>
-                <div className='col-span-2 md:col-span-2 text-center'>
-                  <Badge
-                    variant={
-                      product.stock === 0
-                        ? 'destructive'
-                        : product.stock < 10
-                        ? 'secondary'
-                        : 'outline'
-                    }
-                    className={
-                      product.stock < 10
-                        ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
-                        : ''
-                    }
-                  >
-                    {product.stock}
-                  </Badge>
-                </div>
-                <div className='col-span-1 md:col-span-3 flex justify-end gap-2'>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-8 w-8'
-                    onClick={() => openProductDialog(product)}
-                    title='Edit product'
-                  >
-                    <Edit className='h-4 w-4' />
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-8 w-8'
-                    onClick={() => handleToggleProductVisibility(product)}
-                    title={product.isHidden ? 'Show product' : 'Hide product'}
-                  >
-                    {product.isHidden ? (
-                      <EyeOff className='h-4 w-4' />
-                    ) : (
-                      <Eye className='h-4 w-4' />
-                    )}
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10'
-                    onClick={() => handleDeleteProduct(product.id)}
-                    title='Delete product permanently'
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
           )}
         </TabsContent>
       </Tabs>

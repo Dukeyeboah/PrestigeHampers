@@ -41,7 +41,7 @@ service firebase.storage {
       allow write: if isAdmin() || staffCanManageInventory();
     }
 
-    // Inventory images (drug/product images)
+    // Product / inventory images
     match /inventoryImages/{allPaths=**} {
       // Anyone can read inventory images (authenticated or not) - for browsing
       allow read: if true;
