@@ -74,13 +74,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_GH',
-    url: siteUrl,
+    url: '/',
     siteName: SITE_NAME,
     title: `${SITE_NAME} — Premium Gift Hampers & Treats`,
     description: SITE_TAGLINE,
     images: [
       {
+        // Relative path resolved against metadataBase (production domain)
         url: OG_IMAGE_PATH,
+        secureUrl: OG_IMAGE_PATH,
         width: OG_IMAGE_WIDTH,
         height: OG_IMAGE_HEIGHT,
         alt: OG_IMAGE_ALT,
@@ -102,7 +104,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: siteUrl,
+    canonical: '/',
   },
 };
 
