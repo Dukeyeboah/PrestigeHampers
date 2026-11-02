@@ -53,7 +53,7 @@ export function AppSidebar() {
 
   const routes = [
     {
-      name: 'Hampers',
+      name: 'Shop',
       path: '/products',
       icon: Package,
       show: true,

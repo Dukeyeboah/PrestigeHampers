@@ -39,7 +39,7 @@ export function TopNav() {
 
   const navRoutes = [
     { label: 'Home', href: '/', icon: Home },
-    { label: 'Hampers', href: '/products', icon: Package },
+    { label: 'Shop', href: '/products', icon: Package },
     { label: 'Saved', href: '/saved', icon: Bookmark },
     { label: 'My Cart', href: '/cart', icon: ShoppingCart },
     { label: 'My Orders', href: '/orders', icon: ClipboardList, requiresAuth: true },
