@@ -74,12 +74,13 @@ export function TopNav() {
         <div className='mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 md:px-8'>
           <Link href='/' className='flex items-center gap-2 shrink-0'>
             <Image
-              src='/images/prestigeHampersLogo.png'
+              src='/images/Prestige_Logo.svg'
               alt='Prestige Hampers'
               width={32}
-              height={32}
-              className='h-7 w-7 md:h-8 md:w-8 object-contain mb-2'
+              height={40}
+              className='h-7 w-auto md:h-8 object-contain'
               priority
+              unoptimized
             />
             <span className='text-base md:text-lg font-semibold tracking-tight text-neutral-900'>
               Prestige Hampers
