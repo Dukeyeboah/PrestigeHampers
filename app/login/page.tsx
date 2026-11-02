@@ -15,6 +15,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import {
   Card,
@@ -353,13 +354,13 @@ export default function LoginPage() {
                 </div>
                 <div className='space-y-2'>
                   <Label htmlFor='password'>Password</Label>
-                  <Input
+                  <PasswordInput
                     id='password'
-                    type='password'
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className='bg-background'
+                    autoComplete='current-password'
                   />
                 </div>
                 <Button type='submit' className='w-full' disabled={loading}>

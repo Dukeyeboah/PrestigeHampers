@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Menu } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/user-avatar';
 import { useSidebar } from './sidebar-context';
 import { useNotifications } from '@/hooks/use-notifications';
 import { Badge } from '@/components/ui/badge';
@@ -165,17 +165,14 @@ export function AppSidebar() {
                     size='icon'
                     className='h-10 w-10 rounded-full relative'
                   >
-                    <Avatar className='h-10 w-10'>
-                      <AvatarImage
-                        src={user.photoURL}
-                        alt={user.name || user.email}
-                      />
-                      <AvatarFallback className='bg-secondary text-primary font-bold'>
-                        {user.name?.charAt(0).toUpperCase() ||
-                          user.email?.charAt(0).toUpperCase() ||
-                          'U'}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      className='h-10 w-10'
+                      photoURL={user.photoURL}
+                      name={user.name}
+                      email={user.email}
+                      fallbackClassName='bg-secondary text-primary'
+                      iconClassName='h-5 w-5'
+                    />
                     <MoreHorizontal className='absolute -bottom-1 -right-1 h-3 w-3 bg-background rounded-full p-0.5' />
                   </Button>
                 </DropdownMenuTrigger>
@@ -191,17 +188,13 @@ export function AppSidebar() {
               </DropdownMenu>
             ) : (
               <>
-                <Avatar className='h-8 w-8'>
-                  <AvatarImage
-                    src={user.photoURL}
-                    alt={user.name || user.email}
-                  />
-                  <AvatarFallback className='bg-secondary text-primary font-bold'>
-                    {user.name?.charAt(0).toUpperCase() ||
-                      user.email?.charAt(0).toUpperCase() ||
-                      'U'}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  className='h-8 w-8'
+                  photoURL={user.photoURL}
+                  name={user.name}
+                  email={user.email}
+                  fallbackClassName='bg-secondary text-primary'
+                />
                 <div className='overflow-hidden flex-1'>
                   <p className='truncate text-sm font-medium'>
                     {user.name || 'User'}

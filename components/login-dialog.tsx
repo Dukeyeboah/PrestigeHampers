@@ -82,6 +82,7 @@ export function LoginDialog({
   const [altMethod, setAltMethod] = useState<AltAuthMethod>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -114,6 +115,7 @@ export function LoginDialog({
     setError('');
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setName('');
     setPhone('');
     setVerificationCode('');
@@ -199,6 +201,22 @@ export function LoginDialog({
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (authMode === 'signup') {
+      if (!name.trim()) {
+        setError('Please enter your name.');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+    }
+
     setLoading(true);
     if (!auth || !db) {
       setError('Authentication unavailable.');
@@ -210,7 +228,7 @@ export function LoginDialog({
         authMode === 'signup'
           ? await createUserWithEmailAndPassword(auth, email, password)
           : await signInWithEmailAndPassword(auth, email, password);
-      await ensureUserProfile(credential.user, undefined, name);
+      await ensureUserProfile(credential.user, undefined, name.trim());
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -409,6 +427,8 @@ export function LoginDialog({
                     onChange={(e) => setName(e.target.value)}
                     placeholder='Your name'
                     className='rounded-xl'
+                    required
+                    autoComplete='name'
                   />
                 </div>
               )}
@@ -438,6 +458,23 @@ export function LoginDialog({
                   }
                 />
               </div>
+              {authMode === 'signup' && (
+                <div className='space-y-1.5'>
+                  <Label htmlFor='auth-confirm-password'>
+                    Confirm password
+                  </Label>
+                  <PasswordInput
+                    id='auth-confirm-password'
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className='rounded-xl'
+                    autoComplete='new-password'
+                    placeholder='Re-type password'
+                  />
+                </div>
+              )}
               <Button
                 type='submit'
                 className='w-full rounded-full h-11'
