@@ -40,9 +40,13 @@ export function TopNav() {
   const navRoutes = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Shop', href: '/products', icon: Package },
-    { label: 'Saved', href: '/saved', icon: Bookmark },
     { label: 'My Cart', href: '/cart', icon: ShoppingCart },
     { label: 'My Orders', href: '/orders', icon: ClipboardList, requiresAuth: true },
+  ];
+
+  // Saved stays in the hamburger menu only (not the desktop center nav)
+  const menuOnlyRoutes = [
+    { label: 'Saved', href: '/saved', icon: Bookmark },
   ];
 
   const adminRoutes = isAdmin
@@ -63,8 +67,14 @@ export function TopNav() {
         ]
       : [];
 
+  // Desktop center nav: Home, Shop, My Cart only
+  const desktopNavRoutes = navRoutes.filter((r) =>
+    ['/', '/products', '/cart'].includes(r.href)
+  );
+
   const menuRoutes = [
     ...navRoutes.filter((r) => !r.requiresAuth || user),
+    ...menuOnlyRoutes,
     ...adminRoutes,
   ];
 
@@ -89,8 +99,7 @@ export function TopNav() {
 
           {/* Desktop text nav only */}
           <nav className='hidden md:flex flex-1 items-center justify-center gap-1'>
-            {navRoutes.map((route) => {
-              if (route.requiresAuth && !user) return null;
+            {desktopNavRoutes.map((route) => {
               const active =
                 route.href === '/'
                   ? pathname === '/'
