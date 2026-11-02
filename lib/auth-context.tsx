@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -17,7 +17,10 @@ interface AuthContextType {
   viewMode: 'admin' | 'client' | 'staff';
   setViewMode: (mode: 'admin' | 'client' | 'staff') => void;
   logout: () => Promise<void>;
-  hasPermission: (permission: keyof import('@/types').StaffPermissions) => boolean;
+  refreshUser: () => Promise<void>;
+  hasPermission: (
+    permission: keyof import('@/types').StaffPermissions
+  ) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   viewMode: 'client',
   setViewMode: () => {},
   logout: async () => {},
+  refreshUser: async () => {},
   hasPermission: () => false,
 });
 
@@ -36,8 +40,28 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'admin' | 'client' | 'staff'>('client');
+  const [viewMode, setViewMode] = useState<'admin' | 'client' | 'staff'>(
+    'client'
+  );
   const router = useRouter();
+
+  const applyRoleView = (role: User['role']) => {
+    if (role === 'admin') setViewMode('admin');
+    else if (role === 'staff') setViewMode('staff');
+    else setViewMode('client');
+  };
+
+  const refreshUser = useCallback(async () => {
+    if (!auth?.currentUser || !db) return;
+    const snap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+    if (snap.exists()) {
+      const data = snap.data() as User;
+      setUser({
+        ...data,
+        photoURL: auth.currentUser.photoURL || data.photoURL,
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!auth || !db) {
@@ -51,43 +75,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Try to fetch user profile from Firestore
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
 
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
-            // Update photoURL from Firebase Auth if available
             const updatedUser = {
               ...userData,
               photoURL: firebaseUser.photoURL || userData.photoURL,
             };
             setUser(updatedUser);
-            // Set view mode based on role
-            if (updatedUser.role === 'admin') {
-              setViewMode('admin');
-            } else if (updatedUser.role === 'staff') {
-              setViewMode('staff');
-            }
+            applyRoleView(updatedUser.role);
           } else {
-            // Check if email is in admin whitelist
             const email = firebaseUser.email || '';
             const shouldBeAdmin = isAdminEmail(email);
 
-            // Create new user profile (omit undefined — Firestore rejects it)
             const newUser: User = {
               id: firebaseUser.uid,
               email: email,
               role: shouldBeAdmin ? 'admin' : 'client',
               name: firebaseUser.displayName || '',
               phone: firebaseUser.phoneNumber || '',
+              profileComplete: false,
               createdAt: Date.now(),
               ...(firebaseUser.photoURL
                 ? { photoURL: firebaseUser.photoURL }
                 : {}),
             };
 
-            // Try to save to Firestore
             try {
               await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
             } catch (error) {
@@ -95,19 +110,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             setUser(newUser);
-            if (shouldBeAdmin) {
-              setViewMode('admin');
-            } else if (newUser.role === 'staff') {
-              setViewMode('staff');
-            }
+            applyRoleView(newUser.role);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
-          // Fallback for when Firestore fails (e.g. missing permissions/rules)
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email || '',
             role: 'client',
+            name: firebaseUser.displayName || '',
+            phone: firebaseUser.phoneNumber || '',
+            profileComplete: false,
             createdAt: Date.now(),
           });
         }
@@ -130,14 +143,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push('/');
     } catch (error) {
       console.error('Error during logout:', error);
-      // Still clear local state even if Firebase signOut fails
       setUser(null);
       setViewMode('client');
       router.push('/');
     }
   };
 
-  const hasPermission = (permission: keyof import('@/types').StaffPermissions): boolean => {
+  const hasPermission = (
+    permission: keyof import('@/types').StaffPermissions
+  ): boolean => {
     if (user?.role === 'admin') return true;
     if (user?.role === 'staff' && user.permissions) {
       return user.permissions[permission] === true;
@@ -152,11 +166,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         isAdmin: user?.role === 'admin',
         isStaff: user?.role === 'staff',
-        viewMode: user?.role === 'admin' ? viewMode : user?.role === 'staff' ? 'staff' : 'client',
+        viewMode:
+          user?.role === 'admin'
+            ? viewMode
+            : user?.role === 'staff'
+              ? 'staff'
+              : 'client',
         setViewMode: (mode) => {
           if (user?.role === 'admin') {
             setViewMode(mode);
-            // Navigate to appropriate page when switching views
             if (mode === 'admin') {
               router.push('/admin');
             } else {
@@ -165,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         },
         logout,
+        refreshUser,
         hasPermission,
       }}
     >

@@ -12,8 +12,13 @@ export interface User {
   role: 'admin' | 'client' | 'staff';
   name?: string;
   phone?: string;
+  /** Delivery / area location (optional) */
+  address?: string;
   photoURL?: string; // Profile image URL from Google/Gmail
+  /** False until the post-signup profile form is completed */
+  profileComplete?: boolean;
   createdAt: number;
+  updatedAt?: number;
   savedProductIds?: string[];
   // Staff-specific permissions (only for staff role)
   permissions?: StaffPermissions;

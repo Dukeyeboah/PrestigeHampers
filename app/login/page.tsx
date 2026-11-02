@@ -254,6 +254,7 @@ export default function LoginPage() {
           phone: phoneNumber || firebaseUser.phoneNumber || '',
           role: shouldBeAdmin ? 'admin' : 'client',
           name: firebaseUser.displayName || '',
+          profileComplete: false,
           createdAt: Date.now(),
           ...(firebaseUser.photoURL
             ? { photoURL: firebaseUser.photoURL }

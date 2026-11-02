@@ -150,6 +150,7 @@ export function LoginDialog({
         phone: phoneNumber || firebaseUser.phoneNumber || '',
         role: 'client',
         name: displayName || firebaseUser.displayName || '',
+        profileComplete: false,
         createdAt: Date.now(),
       };
       if (firebaseUser.photoURL) {
