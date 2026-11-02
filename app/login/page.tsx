@@ -246,15 +246,17 @@ export default function LoginPage() {
         // Check if email is in admin whitelist
         const shouldBeAdmin = isAdminEmail(email);
 
-        // Create new user profile
+        // Create new user profile (omit undefined — Firestore rejects it)
         const newUser: User = {
           id: firebaseUser.uid,
           email: email,
           phone: phoneNumber || firebaseUser.phoneNumber || '',
           role: shouldBeAdmin ? 'admin' : 'client',
           name: firebaseUser.displayName || '',
-          photoURL: firebaseUser.photoURL || undefined,
           createdAt: Date.now(),
+          ...(firebaseUser.photoURL
+            ? { photoURL: firebaseUser.photoURL }
+            : {}),
         };
 
         // If admin email, don't set role yet - require passkey

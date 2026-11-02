@@ -74,15 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const email = firebaseUser.email || '';
             const shouldBeAdmin = isAdminEmail(email);
 
-            // Create new user profile
+            // Create new user profile (omit undefined — Firestore rejects it)
             const newUser: User = {
               id: firebaseUser.uid,
               email: email,
               role: shouldBeAdmin ? 'admin' : 'client',
               name: firebaseUser.displayName || '',
               phone: firebaseUser.phoneNumber || '',
-              photoURL: firebaseUser.photoURL || undefined,
               createdAt: Date.now(),
+              ...(firebaseUser.photoURL
+                ? { photoURL: firebaseUser.photoURL }
+                : {}),
             };
 
             // Try to save to Firestore

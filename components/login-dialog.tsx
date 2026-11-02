@@ -140,15 +140,19 @@ export function LoginDialog({
 
     if (!userDoc.exists()) {
       const shouldBeAdmin = isAdminEmail(userEmail);
-      const newUser: User = {
+      // Firestore rejects `undefined` — omit optional fields when absent
+      // (phone auth users typically have no photoURL / email).
+      const newUser: Record<string, unknown> = {
         id: firebaseUser.uid,
         email: userEmail,
         phone: phoneNumber || firebaseUser.phoneNumber || '',
         role: 'client',
         name: displayName || firebaseUser.displayName || '',
-        photoURL: firebaseUser.photoURL || undefined,
         createdAt: Date.now(),
       };
+      if (firebaseUser.photoURL) {
+        newUser.photoURL = firebaseUser.photoURL;
+      }
 
       if (shouldBeAdmin) {
         await setDoc(userDocRef, newUser);

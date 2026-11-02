@@ -66,11 +66,13 @@ export function AdminPortalGate({ onSuccess }: AdminPortalGateProps) {
         email: firebaseUser.email || '',
         role: 'admin',
         name: firebaseUser.displayName || '',
-        photoURL: firebaseUser.photoURL || undefined,
         phone: firebaseUser.phoneNumber || '',
         createdAt: userDoc.exists()
           ? (userDoc.data() as User).createdAt
           : Date.now(),
+        ...(firebaseUser.photoURL
+          ? { photoURL: firebaseUser.photoURL }
+          : {}),
       };
 
       await setDoc(userDocRef, adminUser, { merge: true });
