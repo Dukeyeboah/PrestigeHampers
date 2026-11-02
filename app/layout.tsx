@@ -8,8 +8,9 @@ import {
   SITE_TAGLINE,
   OG_IMAGE_PATH,
   OG_IMAGE_ALT,
+  OG_IMAGE_WIDTH,
+  OG_IMAGE_HEIGHT,
   getSiteUrl,
-  absoluteUrl,
 } from '@/lib/site-config';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -30,7 +31,6 @@ const playfair = Playfair_Display({
 });
 
 const siteUrl = getSiteUrl();
-const ogImageUrl = absoluteUrl(OG_IMAGE_PATH);
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -80,9 +80,9 @@ export const metadata: Metadata = {
     description: SITE_TAGLINE,
     images: [
       {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
+        url: OG_IMAGE_PATH,
+        width: OG_IMAGE_WIDTH,
+        height: OG_IMAGE_HEIGHT,
         alt: OG_IMAGE_ALT,
         type: 'image/jpeg',
       },
@@ -92,7 +92,14 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: `${SITE_NAME} — Premium Gift Hampers & Treats`,
     description: SITE_TAGLINE,
-    images: [ogImageUrl],
+    images: [
+      {
+        url: OG_IMAGE_PATH,
+        width: OG_IMAGE_WIDTH,
+        height: OG_IMAGE_HEIGHT,
+        alt: OG_IMAGE_ALT,
+      },
+    ],
   },
   alternates: {
     canonical: siteUrl,

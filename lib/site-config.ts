@@ -8,10 +8,15 @@ export const SITE_DESCRIPTION =
 export const SITE_TAGLINE =
   'Thoughtfully curated hampers and premium gifts — delivered with quiet luxury.';
 
-/** Path to share preview image (Deluxe Hamper) — must live under /public */
-export const OG_IMAGE_PATH = '/images/hampers/Deluxe_Hamper.jpeg';
+/**
+ * Path to link-preview / Open Graph image (Perfect Christmas).
+ * Use a 1200×630 JPEG under /public for WhatsApp, iMessage, Slack, etc.
+ */
+export const OG_IMAGE_PATH = '/images/og-perfect-christmas.jpg';
+export const OG_IMAGE_WIDTH = 1200;
+export const OG_IMAGE_HEIGHT = 630;
 export const OG_IMAGE_ALT =
-  'Prestige Hampers Deluxe Hamper — premium curated gift collection';
+  'Prestige Hampers Perfect Christmas hamper — curated festive gift collection';
 
 export function getSiteUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
