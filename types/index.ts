@@ -30,6 +30,8 @@ export interface Product {
   unit: string;
   description?: string;
   imageUrl?: string;
+  /** Items included in a hamper (shown in detail modal) */
+  contents?: string[];
   expiryDate?: number; // Unix timestamp
   code?: string; // Product code
   isHidden?: boolean; // Hide product from customers (soft delete)

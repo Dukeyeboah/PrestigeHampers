@@ -7,6 +7,11 @@ import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/hooks/use-cart';
 import { notifyAdminsOfNewOrder } from '@/lib/notifications';
 import { MOMO_NUMBER } from '@/lib/payment-config';
+import {
+  buildWhatsAppOrderMessage,
+  openWhatsAppUrl,
+  whatsappOrderLaunchUrl,
+} from '@/lib/whatsapp-order';
 import type { Order } from '@/types';
 import {
   Dialog,
@@ -76,6 +81,8 @@ export function CheckoutDialog({
     }
 
     setIsSubmitting(true);
+    // Open blank tab early so WhatsApp isn't blocked by popup blockers
+    const waWin = window.open('about:blank', '_blank');
 
     try {
       const calculatedTotal = cart.reduce(
@@ -83,11 +90,16 @@ export function CheckoutDialog({
         0
       );
 
+      const contactPhone =
+        paymentMethod === 'cash'
+          ? cashPayerPhone.trim()
+          : user.phone || cashPayerPhone.trim() || undefined;
+
       const newOrder: Omit<Order, 'id'> = {
         userId: user.id,
         userName: user.name || cashPayerName.trim() || '',
         userEmail: user.email,
-        customerPhone: user.phone || undefined,
+        customerPhone: contactPhone,
         items: cart,
         status: 'pending',
         total: calculatedTotal,
@@ -111,11 +123,25 @@ export function CheckoutDialog({
         cart.reduce((n, i) => n + i.quantity, 0)
       );
 
+      const message = buildWhatsAppOrderMessage({
+        items: cart,
+        total: calculatedTotal,
+        user,
+        contactPhone,
+        paymentMethod,
+        notes: notes.trim() || undefined,
+        displayOrderId: docRef.id.slice(0, 8).toUpperCase(),
+      });
+      openWhatsAppUrl(whatsappOrderLaunchUrl(message), waWin);
+
       clearCart();
       onOpenChange(false);
       onSuccess(docRef.id);
-      toast.success('Order placed successfully!');
+      toast.success(
+        'Order placed. Complete sending the WhatsApp message if the chat opened.'
+      );
     } catch (error) {
+      waWin?.close();
       console.error('Checkout error:', error);
       toast.error('Failed to place order. Please try again.');
     } finally {
@@ -265,7 +291,7 @@ export function CheckoutDialog({
                 Placing order…
               </>
             ) : (
-              'Place order'
+              'Place order on WhatsApp'
             )}
           </Button>
         </DialogFooter>

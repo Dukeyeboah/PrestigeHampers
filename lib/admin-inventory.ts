@@ -27,11 +27,16 @@ export function mergeHamperCatalogWithFirestore(
       const override = byId.get(h.id);
       const item = { ...h, ...override };
       if (item.kind === 'product') return null;
+      const customImage =
+        override?.imageUrl &&
+        (override.imageUrl.includes('firebasestorage') ||
+          override.imageUrl.startsWith('http'));
       return {
         ...item,
         kind: 'hamper' as const,
         category: 'Hampers',
-        imageUrl: override?.imageUrl || h.imageUrl,
+        contents: override?.contents?.length ? override.contents : h.contents,
+        imageUrl: customImage ? override!.imageUrl : h.imageUrl,
       };
     })
     .filter((h): h is Product => h !== null);
@@ -54,11 +59,16 @@ export function mergeAdminInventory(firestoreProducts: Product[]): Product[] {
       const override = byId.get(h.id);
       const item = { ...h, ...override };
       if (item.kind === 'product') return null;
+      const customImage =
+        override?.imageUrl &&
+        (override.imageUrl.includes('firebasestorage') ||
+          override.imageUrl.startsWith('http'));
       return {
         ...item,
         kind: 'hamper' as const,
         category: 'Hampers',
-        imageUrl: override?.imageUrl || h.imageUrl,
+        contents: override?.contents?.length ? override.contents : h.contents,
+        imageUrl: customImage ? override!.imageUrl : h.imageUrl,
       };
     })
     .filter((h): h is Product => h !== null);
