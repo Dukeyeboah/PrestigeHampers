@@ -9,14 +9,14 @@ export const SITE_TAGLINE =
   'Thoughtfully curated hampers and premium gifts — delivered with quiet luxury.';
 
 /**
- * Path to link-preview / Open Graph image (Perfect Christmas).
- * Use a 1200×630 JPEG under /public for WhatsApp, iMessage, Slack, etc.
+ * Path to link-preview / Open Graph image (Family Breakfast, full-bleed 1200×630).
+ * Use a JPEG under /public for WhatsApp, iMessage, Slack, etc.
  */
-export const OG_IMAGE_PATH = '/images/og-perfect-christmas.jpg';
+export const OG_IMAGE_PATH = '/images/og-share.jpg';
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_IMAGE_ALT =
-  'Prestige Hampers Perfect Christmas hamper — curated festive gift collection';
+  'Prestige Hampers Family Breakfast hamper — curated gift collection';
 
 /**
  * Canonical public site URL for Open Graph / link previews.
