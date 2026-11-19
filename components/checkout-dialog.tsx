@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CreditCard, Banknote, Smartphone } from 'lucide-react';
+import { Loader2, Banknote, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CheckoutDialogProps {
@@ -195,6 +195,7 @@ export function CheckoutDialog({
                 <Smartphone className='h-4 w-4 text-neutral-600 shrink-0' />
                 <span className='text-sm font-medium'>Mobile Money (MoMo)</span>
               </label>
+              {/* Credit-card checkout is temporarily disabled.
               <label
                 htmlFor='pay-card'
                 className='flex items-center gap-3 rounded-xl border p-3 cursor-pointer hover:bg-neutral-50 has-[:checked]:border-neutral-900 has-[:checked]:bg-neutral-50'
@@ -208,6 +209,7 @@ export function CheckoutDialog({
                   </span>
                 </span>
               </label>
+              */}
             </RadioGroup>
 
             {(paymentMethod === 'cash' || !user) && (

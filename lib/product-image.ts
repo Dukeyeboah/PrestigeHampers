@@ -54,5 +54,7 @@ export function resolveProductImageUrl(product: Product): string | undefined {
 
 export function withResolvedImage(product: Product): Product {
   const imageUrl = resolveProductImageUrl(product);
-  return imageUrl ? { ...product, imageUrl } : product;
+  const name = product.id === 'hamper-budget-hamper' ? 'Budget'
+    : product.id === 'hamper-deluxe-hamper' ? 'Deluxe' : product.name;
+  return { ...product, name, ...(imageUrl ? { imageUrl } : {}) };
 }

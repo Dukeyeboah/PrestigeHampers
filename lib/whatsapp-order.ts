@@ -70,7 +70,7 @@ export function buildWhatsAppOrderMessage(opts: {
         : paymentMethod === 'card'
           ? 'Card'
           : 'Cash';
-    lines.push(`*Payment:* ${payLabel}`);
+    lines.push(`*Payment method:* ${payLabel}`);
   }
   if (notes?.trim()) {
     lines.push(`*Notes:* ${notes.trim()}`);

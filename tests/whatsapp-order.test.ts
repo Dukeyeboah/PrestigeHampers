@@ -9,7 +9,7 @@ test('guest WhatsApp order includes contact, quantities, payment, notes and tota
  assert.match(message,/Quantity: 2/);
  assert.match(message,/Subtotal: ₵2,000.00/);
  assert.match(message,/Grand total: ₵2,000.00/);
- assert.match(message,/Payment:\* MoMo/);
+ assert.match(message,/Payment method:\* MoMo/);
  assert.match(message,/Gift & delivery/);
  const url=new URL(whatsappOrderLaunchUrl(message));
  assert.equal(url.hostname,'wa.me');

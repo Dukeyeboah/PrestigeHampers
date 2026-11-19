@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, createElement, type ReactNode } from 'react';
 import type { CartItem, Product } from '@/types';
+import { withResolvedImage } from '@/lib/product-image';
 import { toast } from 'sonner';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -72,7 +73,7 @@ function useCartState() {
         }
 
         if (mergedCart.length > 0) {
-          setCart(mergedCart);
+          setCart(mergedCart.map(item => ({ ...item, ...withResolvedImage(item) })));
           console.log('Loaded cart:', mergedCart.length, 'items');
         }
       } catch (e) {

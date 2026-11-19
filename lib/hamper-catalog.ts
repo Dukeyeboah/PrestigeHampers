@@ -17,7 +17,7 @@ export type HamperCatalogEntry = {
 export const HAMPER_CATALOG: HamperCatalogEntry[] = [
   {
     id: 'hamper-budget-hamper',
-    name: 'Budget Hamper',
+    name: 'Budget',
     price: 950,
     imageUrl: '/images/hampers/optimized/budget_hamper.webp',
     imageJpg: '/images/hampers/optimized/budget_hamper.jpg',
@@ -185,7 +185,7 @@ export const HAMPER_CATALOG: HamperCatalogEntry[] = [
   },
   {
     id: 'hamper-deluxe-hamper',
-    name: 'Deluxe Hamper',
+    name: 'Deluxe',
     price: 6000,
     imageUrl: '/images/hampers/optimized/deluxe_hamper.webp',
     imageJpg: '/images/hampers/optimized/deluxe_hamper.jpg',
