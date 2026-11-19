@@ -45,7 +45,7 @@ export default function ProductsPage() {
     </div>
     {!loading && !products.length && <p className='text-center py-16'>No hampers in this collection yet.</p>}
     <footer className='border-t border-primary/30 mt-6 py-8 flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm'>
-      <Link href='/about'>About us</Link><Link href='/about#delivery'>Delivery & FAQs</Link><Link href='/about#contact'>Contact</Link>
+      <Link href='/about'>About us</Link><Link href='/about#delivery'>FAQs</Link><Link href='/about#contact'>Contact</Link>
     </footer>
     </div>
   </div>;
