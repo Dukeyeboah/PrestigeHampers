@@ -74,12 +74,12 @@ export function ProductCarousel({
               href='/products'
               className='group flex-shrink-0 w-[150px] sm:w-[200px] md:w-[260px] cursor-pointer'
             >
-              <div className='relative aspect-[4/5] rounded-2xl overflow-hidden bg-neutral-100 shadow-sm transition-transform duration-300 group-hover:scale-[1.02]'>
+              <div className='relative aspect-[4/5] rounded-2xl overflow-hidden bg-white shadow-sm transition-transform duration-300 group-hover:scale-[1.02]'>
                 {imageSrc ? (
                   <LazyImage
                     src={imageSrc}
                     alt={product.name}
-                    className='w-full h-full object-cover'
+                    className='w-full h-full object-contain p-2'
                   />
                 ) : (
                   <div className='w-full h-full flex items-center justify-center bg-neutral-100'>

@@ -52,8 +52,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
   const imageBlock = (
     <div
-      className={`relative aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 shadow-sm transition-all duration-300 hover:shadow-md ${
-        isHamper ? 'cursor-pointer' : ''
+      className={`relative aspect-[3/4] rounded-2xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md ${
+        isHamper ? 'cursor-pointer bg-white' : 'bg-neutral-100'
       }`}
       onClick={isHamper ? () => setShowHamperDetail(true) : undefined}
       role={isHamper ? 'button' : undefined}
@@ -73,7 +73,9 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         <LazyImage
           src={imageSrc}
           alt={product.name}
-          className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-105'
+          className={`w-full h-full transition-transform duration-500 group-hover:scale-[1.02] ${
+            isHamper ? 'object-contain p-2' : 'object-cover'
+          }`}
           onError={() => setImageError(true)}
         />
       ) : (

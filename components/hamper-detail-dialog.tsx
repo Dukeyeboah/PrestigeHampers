@@ -52,12 +52,12 @@ export function HamperDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-3xl p-0 overflow-hidden rounded-2xl max-h-[90vh] gap-0'>
         <div className='grid md:grid-cols-2 max-h-[90vh] md:max-h-[min(90vh,640px)]'>
-          <div className='relative aspect-square md:aspect-auto md:min-h-[420px] bg-neutral-100'>
+          <div className='relative aspect-square md:aspect-auto md:min-h-[420px] bg-white'>
             {imageSrc ? (
               <LazyImage
                 src={imageSrc}
                 alt={product.name}
-                className='absolute inset-0 w-full h-full object-cover'
+                className='absolute inset-0 w-full h-full object-contain p-4'
               />
             ) : (
               <div className='absolute inset-0 flex items-center justify-center text-5xl font-serif text-neutral-300'>
