@@ -21,6 +21,7 @@ export default function ProductsPage() {
   return <div>
     <section className='store-intro text-center'>
       <h1 className='store-title'>Thoughtfully curated hampers,<br className='hidden sm:block' /> delivered with quiet luxury.</h1>
+      <p className='mt-3 text-sm md:text-base leading-relaxed text-primary/75'>Order from our collection of premium signature gift hampers</p>
     </section>
     <div className='store-filters'>
       <div className='flex flex-wrap justify-center gap-1 md:gap-5' role='group' aria-label='Filter hampers'>
