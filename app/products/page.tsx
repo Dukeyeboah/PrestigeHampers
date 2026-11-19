@@ -21,11 +21,12 @@ export default function ProductsPage() {
   }, [hampers, filter]);
   return <div>
     <section className='store-intro text-center'>
-      <Image src='/images/hamperBackground.jpg' alt='' fill priority sizes='(max-width: 1440px) 100vw, 1440px' className='object-cover object-center' />
+      <Image src='/images/hamperBackground.jpg' alt='' fill priority sizes='100vw' className='object-cover object-center' />
       <div className='absolute inset-0 bg-black/50' aria-hidden='true' />
       <h1 className='store-title'>Thoughtfully curated hampers,<br className='hidden sm:block' /> delivered with quiet luxury.</h1>
       <p className='mt-3 text-sm md:text-base leading-relaxed text-white/90'>Order from our collection of premium signature gift hampers</p>
     </section>
+    <div className='mx-auto max-w-[1440px] px-4 md:px-8 pb-6 md:pb-10'>
     <div className='store-filters'>
       <div className='flex flex-wrap justify-center gap-1 md:gap-5' role='group' aria-label='Filter hampers'>
         {filters.map(label => <button key={label} onClick={() => setFilter(label)} aria-pressed={filter === label} className={`whitespace-nowrap rounded-full px-3 md:px-6 min-h-11 text-sm transition-colors ${filter === label ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>{label}</button>)}
@@ -38,5 +39,6 @@ export default function ProductsPage() {
     <footer className='border-t border-primary/30 mt-6 py-8 flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm'>
       <Link href='/about'>About us</Link><Link href='/about#delivery'>Delivery & FAQs</Link><Link href='/about#contact'>Contact</Link>
     </footer>
+    </div>
   </div>;
 }

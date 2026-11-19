@@ -27,9 +27,7 @@ export default function ProductsLayout({
     <div className='min-h-screen bg-background'>
       <TopNav />
       <main className='pt-20'>
-        <div className='mx-auto max-w-[1440px] px-4 md:px-8 pt-4 pb-6 md:pt-5 md:pb-10'>
-          <Suspense fallback={<ProductsLoading />}>{children}</Suspense>
-        </div>
+        <Suspense fallback={<ProductsLoading />}>{children}</Suspense>
       </main>
     </div>
   );
