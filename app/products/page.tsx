@@ -21,16 +21,10 @@ export default function ProductsPage() {
   }, [hampers, filter]);
   return <div>
     <section className='store-intro text-center'>
-      <div className='hero-collage hero-collage-left' aria-hidden='true'>
-        <Image src='/images/hampers/illustrations/deluxe_hamper.webp' alt='' width={320} height={280} className='hero-cutout hero-cutout-back' priority />
-        <Image src='/images/hampers/illustrations/family_breakfast.webp' alt='' width={320} height={180} className='hero-cutout hero-cutout-front' priority />
-      </div>
-      <div className='hero-collage hero-collage-right' aria-hidden='true'>
-        <Image src='/images/hampers/illustrations/alcohol_free.webp' alt='' width={320} height={285} className='hero-cutout hero-cutout-back' priority />
-        <Image src='/images/hampers/illustrations/for_her.webp' alt='' width={320} height={275} className='hero-cutout hero-cutout-front' priority />
-      </div>
+      <Image src='/images/hamperBackground.jpg' alt='' fill priority sizes='(max-width: 1440px) 100vw, 1440px' className='object-cover object-center' />
+      <div className='absolute inset-0 bg-black/50' aria-hidden='true' />
       <h1 className='store-title'>Thoughtfully curated hampers,<br className='hidden sm:block' /> delivered with quiet luxury.</h1>
-      <p className='mt-3 text-sm md:text-base leading-relaxed text-primary/75'>Order from our collection of premium signature gift hampers</p>
+      <p className='mt-3 text-sm md:text-base leading-relaxed text-white/90'>Order from our collection of premium signature gift hampers</p>
     </section>
     <div className='store-filters'>
       <div className='flex flex-wrap justify-center gap-1 md:gap-5' role='group' aria-label='Filter hampers'>
