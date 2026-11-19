@@ -74,7 +74,7 @@ export function ProductCarousel({
               href='/products'
               className='group flex-shrink-0 w-[150px] sm:w-[200px] md:w-[260px] cursor-pointer'
             >
-              <div className='relative aspect-[4/5] rounded-2xl overflow-hidden bg-white shadow-sm transition-transform duration-300 group-hover:scale-[1.02]'>
+              <div className='relative aspect-[4/5] rounded-2xl overflow-hidden bg-black shadow-sm transition-transform duration-300 group-hover:scale-[1.02]'>
                 {imageSrc ? (
                   <LazyImage
                     src={imageSrc}
