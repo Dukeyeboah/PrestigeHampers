@@ -134,9 +134,9 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           </h3>
 
           <div className='flex items-center justify-between text-xs text-muted-foreground'>
-            <span className='truncate pr-1'>
+            {!isHamper && <span className='truncate pr-1'>
               {isOutOfStock ? 'Unavailable' : `${product.stock} left`}
-            </span>
+            </span>}
             <span className='font-semibold text-sm text-foreground shrink-0'>
               ₵{product.price.toLocaleString('en-GH', { minimumFractionDigits: 2 })}
             </span>
