@@ -52,8 +52,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
   const imageBlock = (
     <div
-      className={`relative aspect-[3/4] rounded-2xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md ${
-        isHamper ? 'cursor-pointer bg-black' : 'bg-neutral-100'
+      className={`relative aspect-square rounded-xl overflow-hidden transition-all duration-300 ${
+        isHamper ? 'cursor-pointer bg-[#eee6d8]/40' : 'bg-neutral-100'
       }`}
       onClick={isHamper ? () => setShowHamperDetail(true) : undefined}
       role={isHamper ? 'button' : undefined}
@@ -125,7 +125,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         <div className='pt-2.5 md:pt-3 px-0.5 space-y-2 flex-1 flex flex-col'>
           <h3
-            className={`font-medium text-xs md:text-sm leading-snug line-clamp-2 text-foreground ${
+            className={`font-medium text-sm md:text-lg leading-snug line-clamp-2 text-foreground ${
               isHamper ? 'cursor-pointer hover:underline underline-offset-2' : ''
             }`}
             onClick={isHamper ? () => setShowHamperDetail(true) : undefined}
@@ -138,13 +138,13 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
               {isOutOfStock ? 'Unavailable' : `${product.stock} left`}
             </span>
             <span className='font-semibold text-sm text-foreground shrink-0'>
-              ₵{product.price.toFixed(2)}
+              ₵{product.price.toLocaleString('en-GH', { minimumFractionDigits: 2 })}
             </span>
           </div>
 
           <Button
             size='sm'
-            className='w-full rounded-full h-8 md:h-9 mt-auto text-xs font-medium'
+            className='w-full rounded-lg h-11 mt-auto text-sm font-medium'
             variant={isOutOfStock ? 'outline' : 'default'}
             disabled={isOutOfStock}
             onClick={openAddToCart}

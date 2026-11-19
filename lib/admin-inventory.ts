@@ -23,7 +23,7 @@ export function mergeHamperCatalogWithFirestore(
   const byId = new Map(firestoreProducts.map((p) => [p.id, p]));
 
   const merged = hampers
-    .map((h) => {
+    .map((h): Product | null => {
       const override = byId.get(h.id);
       const item = { ...h, ...override };
       if (item.kind === 'product') return null;
@@ -55,7 +55,7 @@ export function mergeAdminInventory(firestoreProducts: Product[]): Product[] {
   const byId = new Map(firestoreProducts.map((p) => [p.id, p]));
 
   const mergedHampers = hampers
-    .map((h) => {
+    .map((h): Product | null => {
       const override = byId.get(h.id);
       const item = { ...h, ...override };
       if (item.kind === 'product') return null;

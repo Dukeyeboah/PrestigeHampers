@@ -57,6 +57,7 @@ export interface Order {
     | 'pending'
     | 'checking_stock'
     | 'shop_confirmed'
+    | 'pharmacy_confirmed'
     | 'customer_confirmed'
     | 'processing'
     | 'completed'

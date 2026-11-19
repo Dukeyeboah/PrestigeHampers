@@ -38,7 +38,7 @@ export function TopNav() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const navRoutes = [
-    { label: 'Home', href: '/', icon: Home },
+    { label: 'About', href: '/about', icon: Home },
     { label: 'Shop', href: '/products', icon: Package },
     { label: 'My Cart', href: '/cart', icon: ShoppingCart },
     { label: 'My Orders', href: '/orders', icon: ClipboardList, requiresAuth: true },
@@ -69,7 +69,7 @@ export function TopNav() {
 
   // Desktop center nav: Home, Shop, My Cart only
   const desktopNavRoutes = navRoutes.filter((r) =>
-    ['/', '/products', '/cart'].includes(r.href)
+    ['/products', '/about'].includes(r.href)
   );
 
   const menuRoutes = [
@@ -80,8 +80,8 @@ export function TopNav() {
 
   return (
     <>
-      <header className='fixed top-0 inset-x-0 z-40 border-b border-neutral-200/80 bg-white/90 backdrop-blur-md safe-area-inset-top'>
-        <div className='mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 md:px-8'>
+      <header className='fixed top-0 inset-x-0 z-40 border-b border-neutral-200/80 bg-background/95 backdrop-blur-md safe-area-inset-top'>
+        <div className='mx-auto flex h-20 max-w-[1440px] items-center gap-3 px-4 md:px-8'>
           <Link href='/' className='flex items-center gap-2 shrink-0'>
             <Image
               src='/images/Prestige_Logo.svg'
@@ -110,7 +110,7 @@ export function TopNav() {
                   href={route.href}
                   className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
                     active
-                      ? 'bg-neutral-900 text-white'
+                      ? 'text-primary font-semibold'
                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
                   }`}
                 >

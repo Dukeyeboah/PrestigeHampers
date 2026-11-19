@@ -50,9 +50,9 @@ export function HamperDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-3xl p-0 overflow-hidden rounded-2xl max-h-[90vh] gap-0'>
-        <div className='grid md:grid-cols-2 max-h-[90vh] md:max-h-[min(90vh,640px)]'>
-          <div className='relative aspect-square md:aspect-auto md:min-h-[420px] bg-black'>
+      <DialogContent className='sm:max-w-3xl p-0 overflow-hidden rounded-2xl max-h-[90svh] overflow-y-auto gap-0'>
+        <div className='grid md:grid-cols-2 md:max-h-[min(90vh,640px)]'>
+          <div className='relative h-56 md:h-auto md:aspect-auto md:min-h-[420px] bg-[#eee6d8]/40'>
             {imageSrc ? (
               <LazyImage
                 src={imageSrc}

@@ -43,10 +43,6 @@ export default function CartPage() {
   const [orderConfirmId, setOrderConfirmId] = useState<string | null>(null);
 
   const handleCheckout = () => {
-    if (!user) {
-      setShowLogin(true);
-      return;
-    }
     setCheckoutOpen(true);
   };
 
@@ -198,20 +194,20 @@ export default function CartPage() {
               onClick={handleCheckout}
               disabled={cart.length === 0}
             >
-              {user ? 'Checkout' : 'Sign in to checkout'}
-              <ArrowRight className='ml-2 h-4 w-4' />
+              Checkout on WhatsApp
+
             </Button>
 
             <p className='text-xs text-center text-muted-foreground'>
               {user
                 ? 'Orders are saved to your account for easy tracking.'
-                : 'An account is required to place orders and view order history.'}
+                : 'No account needed. Send your order in WhatsApp to confirm it with us.'}
             </p>
           </div>
         </div>
       </div>
 
-      {user && (
+      {(
         <CheckoutDialog
           open={checkoutOpen}
           onOpenChange={setCheckoutOpen}

@@ -180,6 +180,7 @@ export default function StaffDashboard() {
       pending: { label: 'Pending', variant: 'outline' },
       checking_stock: { label: 'Checking Stock', variant: 'secondary' },
       shop_confirmed: { label: 'Shop Confirmed', variant: 'default' },
+      pharmacy_confirmed: { label: 'Shop Confirmed', variant: 'default' },
       customer_confirmed: { label: 'Customer Confirmed', variant: 'default' },
       processing: { label: 'Processing', variant: 'default' },
       completed: { label: 'Completed', variant: 'default' },

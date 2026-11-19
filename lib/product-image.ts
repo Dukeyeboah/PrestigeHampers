@@ -5,6 +5,9 @@ import type { Product } from '@/types';
  * Prefers local /public assets (reliable) over Firebase Storage URLs.
  */
 export function resolveProductImageUrl(product: Product): string | undefined {
+  const illustrations: Record<string, string> = {'hamper-budget-hamper': 'budget_hamper.webp', 'hamper-family-breakfast': 'family_breakfast.webp', 'hamper-alcohol-free': 'alcohol_free.webp', 'hamper-christmas-tradition': 'christmas_tradition.webp', 'hamper-for-her': 'for_her.webp', 'hamper-perfect-christmas': 'perfect_christmas.webp', 'hamper-spirit-of-christmas': 'spirit_of_christmas.webp', 'hamper-christmas-surprise': 'christmas_surprise.webp', 'hamper-deluxe-hamper': 'deluxe_hamper.webp'};
+  if (illustrations[product.id]) return `/images/hampers/illustrations/${illustrations[product.id]}`;
+
   // Hamper — local path from catalog
   if (product.kind === 'hamper' || product.id.startsWith('hamper-')) {
     if (product.imageUrl?.startsWith('/images/')) {

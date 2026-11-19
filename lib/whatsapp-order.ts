@@ -14,6 +14,7 @@ export function buildWhatsAppOrderMessage(opts: {
   items: CartItem[];
   total: number;
   user?: User | null;
+  customerName?: string;
   contactPhone?: string;
   paymentMethod?: 'momo' | 'cash' | 'card';
   notes?: string;
@@ -24,6 +25,7 @@ export function buildWhatsAppOrderMessage(opts: {
     total,
     user,
     contactPhone,
+    customerName,
     paymentMethod,
     notes,
     displayOrderId,
@@ -42,6 +44,7 @@ export function buildWhatsAppOrderMessage(opts: {
     ''
   );
 
+  if (!user && customerName?.trim()) lines.push(`*Ordered by:* ${customerName.trim()}`);
   if (user) {
     lines.push(`*Ordered by:* ${user.name || user.email || '—'}`);
     if (user.email) lines.push(`*Email:* ${user.email}`);

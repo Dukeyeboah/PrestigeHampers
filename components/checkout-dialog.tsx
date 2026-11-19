@@ -58,12 +58,9 @@ export function CheckoutDialog({
   }, [open, user]);
 
   const handlePlaceOrder = async () => {
-    if (!user) {
-      toast.error('Please sign in to place an order.');
-      return;
-    }
+    if (cart.length === 0) return;
 
-    if (!db) {
+    if (user && !db) {
       toast.error('Unable to connect. Please try again.');
       return;
     }
@@ -73,13 +70,22 @@ export function CheckoutDialog({
       return;
     }
 
-    if (paymentMethod === 'cash') {
+    if (paymentMethod === 'cash' || !user) {
       if (!cashPayerName.trim() || !cashPayerPhone.trim()) {
-        toast.error('Please enter your name and phone number for cash payment.');
+        toast.error('Please enter your name and phone number.');
         return;
       }
     }
 
+    if (!user) {
+      const message = buildWhatsAppOrderMessage({ items: cart, total,
+        customerName: cashPayerName.trim(), contactPhone: cashPayerPhone.trim(),
+        paymentMethod, notes: notes.trim() || undefined });
+      openWhatsAppUrl(whatsappOrderLaunchUrl(message));
+      onOpenChange(false);
+      toast.info('Send the message in WhatsApp to complete your order. Your cart is kept until you are ready to clear it.');
+      return;
+    }
     setIsSubmitting(true);
     // Open blank tab early so WhatsApp isn't blocked by popup blockers
     const waWin = window.open('about:blank', '_blank');
@@ -114,14 +120,14 @@ export function CheckoutDialog({
         updatedAt: Date.now(),
       };
 
-      const docRef = await addDoc(collection(db, 'orders'), newOrder);
+      const docRef = await addDoc(collection(db, 'orders'), JSON.parse(JSON.stringify(newOrder)));
 
       await notifyAdminsOfNewOrder(
         docRef.id,
         user.name || user.email,
         calculatedTotal,
         cart.reduce((n, i) => n + i.quantity, 0)
-      );
+      ).catch((error) => console.error('Order saved; admin notification failed:', error));
 
       const message = buildWhatsAppOrderMessage({
         items: cart,
@@ -149,7 +155,7 @@ export function CheckoutDialog({
     }
   };
 
-  if (!user) return null;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -203,10 +209,10 @@ export function CheckoutDialog({
               </label>
             </RadioGroup>
 
-            {paymentMethod === 'cash' && (
+            {(paymentMethod === 'cash' || !user) && (
               <div className='space-y-3 rounded-xl border border-neutral-200 bg-neutral-50/80 p-4'>
                 <p className='text-sm text-muted-foreground'>
-                  Cash payment — we&apos;ll contact you to arrange collection or
+                  We&apos;ll contact you to arrange collection or
                   delivery. Please confirm your details below.
                 </p>
                 <div className='space-y-1.5'>

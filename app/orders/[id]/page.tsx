@@ -1,5 +1,6 @@
 'use client';
 
+import type { Order } from '@/types';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -76,7 +77,7 @@ export default function OrderVerificationPage() {
             setDeliveryAddress(orderData.deliveryAddress);
           }
           if (orderData.paymentMethod) {
-            setPaymentMethod(orderData.paymentMethod);
+            setPaymentMethod(orderData.paymentMethod === 'momo' ? 'momo' : 'cash');
           }
           if (orderData.notes) {
             setNotes(orderData.notes);
@@ -109,7 +110,7 @@ export default function OrderVerificationPage() {
     try {
       // Update order with delivery and payment info (but keep status as shop_confirmed)
       // The status will be updated to customer_confirmed when admin reads the notification
-      const updateData: Partial<Order> = {
+      const updateData: Omit<Partial<Order>, 'deliveryAddress' | 'notes'> & { deliveryAddress?: string | null; notes?: string | null } = {
         deliveryOption,
         deliveryFee: deliveryOption === 'delivery' ? DELIVERY_FEE : 0,
         paymentMethod,

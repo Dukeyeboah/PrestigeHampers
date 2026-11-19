@@ -1,5 +1,6 @@
 'use client';
 
+import { formatPaymentMethod, formatOrderPaymentDetails } from '@/lib/format-payment';
 import { isShopConfirmed, formatOrderStatus } from '@/lib/order-status';
 
 import { useEffect, useState, useRef, useMemo } from 'react';
@@ -628,7 +629,7 @@ Thank you for your business!
       setImageFile(null);
     } else {
       setEditingProduct(null);
-      setProductForm(emptyProductForm(inventoryCatalogFilter));
+      setProductForm(emptyProductForm(inventoryCatalogFilter === 'hampers' ? 'hamper' : 'product'));
       setImagePreview(null);
       setImageFile(null);
     }
@@ -2332,7 +2333,7 @@ Thank you for your business!
                   Select User
                 </Label>
                 <Select
-                  value={editingStaff?.id || ''}
+                  value=''
                   onValueChange={(userId) => {
                     const user = users.find((u) => u.id === userId);
                     if (user) {
