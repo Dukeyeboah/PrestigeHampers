@@ -53,7 +53,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const imageBlock = (
     <div
       className={`relative aspect-square rounded-xl overflow-hidden transition-all duration-300 ${
-        isHamper ? 'cursor-pointer bg-[#eee6d8]/40' : 'bg-neutral-100'
+        isHamper ? 'cursor-pointer bg-neutral-50' : 'bg-neutral-100'
       }`}
       onClick={isHamper ? () => setShowHamperDetail(true) : undefined}
       role={isHamper ? 'button' : undefined}
