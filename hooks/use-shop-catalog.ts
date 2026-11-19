@@ -14,7 +14,10 @@ export function useShopCatalog() {
   const { products: inventoryItems, loading, offline } = useInventory();
 
   const hampers = useMemo(
-    () => mergeHamperCatalogWithFirestore(inventoryItems).map(withResolvedImage),
+    () => mergeHamperCatalogWithFirestore(inventoryItems)
+      // Also exclude a Firestore copy while For Him is temporarily unavailable.
+      .filter(product => product.id !== 'hamper-for-him')
+      .map(withResolvedImage),
     [inventoryItems]
   );
 
