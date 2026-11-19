@@ -76,7 +76,7 @@ export function TopNav() {
   return (
     <>
       <header className='fixed top-0 inset-x-0 z-40 border-b border-neutral-200/80 bg-background/95 backdrop-blur-md safe-area-inset-top'>
-        <div className='mx-auto flex h-20 max-w-[1440px] items-center gap-3 px-4 md:px-8'>
+        <div className='mx-auto flex h-[68px] max-w-[1440px] items-center gap-3 px-4 md:px-8'>
           <Link href='/' className='flex items-center gap-2 shrink-0'>
             <Image
               src='/images/Prestige_Logo.svg'

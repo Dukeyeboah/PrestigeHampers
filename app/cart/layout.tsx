@@ -11,7 +11,7 @@ export default function CartLayout({
   return (
     <div className='min-h-screen bg-background'>
       <TopNav />
-      <main className='pt-20'>
+      <main className='pt-[68px]'>
         <div className='mx-auto max-w-[1440px] px-4 md:px-8 pt-4 pb-6 md:pt-5 md:pb-10'>
           {children}
         </div>
