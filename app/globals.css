@@ -144,26 +144,26 @@
 /* Cream & Ink storefront */
 :root {
   --background: #f6f1e7;
-  --foreground: #173e32;
+  --foreground: #111111;
   --card: #faf7f0;
-  --card-foreground: #173e32;
+  --card-foreground: #111111;
   --popover: #faf7f0;
-  --popover-foreground: #173e32;
-  --primary: #173e32;
+  --popover-foreground: #111111;
+  --primary: #111111;
   --primary-foreground: #fffdf7;
   --secondary: #eae4d8;
-  --secondary-foreground: #173e32;
+  --secondary-foreground: #111111;
   --muted: #eee8dd;
-  --muted-foreground: #59665c;
+  --muted-foreground: #626262;
   --accent: #eae4d8;
-  --accent-foreground: #173e32;
+  --accent-foreground: #111111;
   --border: #d8d8c9;
   --input: #d8d8c9;
-  --ring: #27624e;
+  --ring: #333333;
 }
 .store-intro { padding: 1.25rem 0 1.5rem; }
 .store-title { font-family: var(--font-serif), Georgia, serif; font-size: clamp(1.8rem, 3.4vw, 3rem); font-weight: 600; line-height: 1.2; letter-spacing: -.035em; margin: 0 auto; max-width: 1000px; }
-.store-filters { display: flex; align-items: center; justify-content: center; border-block: 1px solid #173e3455; padding: .5rem 0; }
+.store-filters { display: flex; align-items: center; justify-content: center; border-block: 1px solid #11111133; padding: .5rem 0; }
 @media (max-width: 767px) {
  .store-intro { padding: .75rem .25rem 1.25rem; }
  .store-title { max-width: 580px; }
