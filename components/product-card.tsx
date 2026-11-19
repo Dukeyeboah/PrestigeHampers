@@ -53,7 +53,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const imageBlock = (
     <div
       className={`relative aspect-[3/4] rounded-2xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md ${
-        isHamper ? 'cursor-pointer bg-black' : 'bg-neutral-100'
+        isHamper ? 'cursor-pointer bg-white' : 'bg-neutral-100'
       }`}
       onClick={isHamper ? () => setShowHamperDetail(true) : undefined}
       role={isHamper ? 'button' : undefined}
