@@ -67,11 +67,6 @@ export function TopNav() {
         ]
       : [];
 
-  // Desktop center nav: Home, Shop, My Cart only
-  const desktopNavRoutes = navRoutes.filter((r) =>
-    ['/products', '/about'].includes(r.href)
-  );
-
   const menuRoutes = [
     ...navRoutes.filter((r) => !r.requiresAuth || user),
     ...menuOnlyRoutes,
@@ -92,35 +87,12 @@ export function TopNav() {
               priority
               unoptimized
             />
-            <span className='text-base md:text-lg font-semibold tracking-tight text-neutral-900'>
+            <span className='text-base md:text-lg font-semibold tracking-tight text-primary'>
               Prestige Hampers
             </span>
           </Link>
 
-          {/* Desktop text nav only */}
-          <nav className='hidden md:flex flex-1 items-center justify-center gap-1'>
-            {desktopNavRoutes.map((route) => {
-              const active =
-                route.href === '/'
-                  ? pathname === '/'
-                  : pathname.startsWith(route.href);
-              return (
-                <Link
-                  key={route.href}
-                  href={route.href}
-                  className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
-                    active
-                      ? 'text-primary font-semibold'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
-                  }`}
-                >
-                  {route.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className='flex-1 md:flex-none' />
+          <div className='flex-1' />
 
           <div className='flex items-center gap-2 shrink-0'>
             <Link href='/cart' className='relative'>

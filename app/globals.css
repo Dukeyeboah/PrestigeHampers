@@ -161,12 +161,11 @@
   --input: #d8d8c9;
   --ring: #27624e;
 }
-.store-intro { padding: 3.5rem 0 3rem; }
-.store-title { font-family: var(--font-serif), Georgia, serif; font-size: clamp(2.5rem, 5.4vw, 5rem); font-weight: 600; line-height: 1.13; letter-spacing: -.055em; margin: 1.2rem 0; }
-.store-filters { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-block: 1px solid #173e3455; padding: .7rem 0; }
+.store-intro { padding: 1.25rem 0 1.5rem; }
+.store-title { font-family: var(--font-serif), Georgia, serif; font-size: clamp(1.8rem, 3.4vw, 3rem); font-weight: 600; line-height: 1.2; letter-spacing: -.035em; margin: 0 auto; max-width: 1000px; }
+.store-filters { display: flex; align-items: center; justify-content: center; border-block: 1px solid #173e3455; padding: .5rem 0; }
 @media (max-width: 767px) {
- .store-intro { padding: 2rem .5rem 1.75rem; }
- .store-title { max-width: 340px; margin: 1rem auto; }
- .store-filters { flex-direction: column; align-items: stretch; gap: .25rem; }
+ .store-intro { padding: .75rem .25rem 1.25rem; }
+ .store-title { max-width: 580px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
