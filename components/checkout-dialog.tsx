@@ -9,6 +9,7 @@ import { notifyAdminsOfNewOrder } from '@/lib/notifications';
 import { MOMO_NUMBER } from '@/lib/payment-config';
 import {
   buildWhatsAppOrderMessage,
+  markWhatsAppCheckoutPending,
   openWhatsAppUrl,
   whatsappOrderLaunchUrl,
 } from '@/lib/whatsapp-order';
@@ -41,7 +42,7 @@ export function CheckoutDialog({
   onSuccess,
 }: CheckoutDialogProps) {
   const { user } = useAuth();
-  const { cart, total, clearCart } = useCart();
+  const { cart, total } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'momo' | 'card'>(
     'cash'
@@ -83,7 +84,7 @@ export function CheckoutDialog({
         paymentMethod, notes: notes.trim() || undefined });
       openWhatsAppUrl(whatsappOrderLaunchUrl(message));
       onOpenChange(false);
-      toast.info('Send the message in WhatsApp to complete your order. Your cart is kept until you are ready to clear it.');
+      markWhatsAppCheckoutPending();
       return;
     }
     setIsSubmitting(true);
@@ -140,11 +141,11 @@ export function CheckoutDialog({
       });
       openWhatsAppUrl(whatsappOrderLaunchUrl(message), waWin);
 
-      clearCart();
+
       onOpenChange(false);
-      onSuccess(docRef.id);
+      markWhatsAppCheckoutPending();
       toast.success(
-        'Order placed. Complete sending the WhatsApp message if the chat opened.'
+        'Order saved to your account. Send the message in WhatsApp to confirm it with us.'
       );
     } catch (error) {
       waWin?.close();

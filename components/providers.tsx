@@ -2,6 +2,7 @@
 
 import type React from 'react';
 
+import { WhatsAppReturnDialog } from '@/components/whatsapp-return-dialog';
 import { CartProvider } from '@/hooks/use-cart';
 import { AuthProvider } from '@/lib/auth-context';
 import { Toaster } from '@/components/ui/sonner';
@@ -15,6 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <DemoBanner />
       {children}
       <CompleteProfileDialog />
+      <WhatsAppReturnDialog />
       <Toaster />
     </CartProvider>
     </AuthProvider>

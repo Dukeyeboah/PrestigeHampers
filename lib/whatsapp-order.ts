@@ -1,7 +1,17 @@
 import type { CartItem, User } from '@/types';
 
 /** Prestige Hampers order WhatsApp — digits only for wa.me */
-export const WHATSAPP_ORDER_CHAT_DIGITS = '41764054987';
+export const WHATSAPP_ORDER_CHAT_DIGITS = '14844674166';
+
+export const WHATSAPP_PENDING_KEY = 'prestige_whatsapp_pending';
+export const WHATSAPP_CHECKOUT_EVENT = 'prestige:whatsapp-checkout';
+
+export function markWhatsAppCheckoutPending() {
+  sessionStorage.setItem(WHATSAPP_PENDING_KEY, '1');
+  window.dispatchEvent(new Event(WHATSAPP_CHECKOUT_EVENT));
+}
+
+const money = (value: number) => value.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function siteBaseUrl() {
   return (
@@ -72,16 +82,16 @@ export function buildWhatsAppOrderMessage(opts: {
     const lineTotal = item.price * item.quantity;
     lines.push(
       `${i + 1}. *${item.name}*`,
-      `     Quantity: ${item.quantity}${item.unit ? ` ${item.unit}` : ''}`,
-      `     Unit price: ₵${item.price.toFixed(2)}`,
-      `     Line total: ₵${lineTotal.toFixed(2)}`,
+      `Quantity: ${item.quantity}`,
+      `Price each: ₵${money(item.price)}`,
+      `Subtotal: ₵${money(lineTotal)}`,
       ''
     );
   });
 
   lines.push(
     '————————————',
-    `*Grand total: ₵${total.toFixed(2)}*`,
+    `*Grand total: ₵${money(total)}*`,
     `*${itemCount} item${itemCount === 1 ? '' : 's'} (${items.length} product${items.length === 1 ? '' : 's'})*`,
     '————————————',
     '',
