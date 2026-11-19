@@ -161,12 +161,12 @@
   --input: #dedede;
   --ring: #333333;
 }
-.store-intro { position: relative; isolation: isolate; overflow: hidden; color: white; padding: 2.25rem 1.5rem; min-height: 250px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 1.5rem; }
+.store-intro { position: relative; isolation: isolate; overflow: hidden; color: white; padding: 2.25rem 1.5rem; min-height: 250px; display: flex; flex-direction: column; justify-content: center; margin-bottom: .5rem; }
 .store-intro > h1, .store-intro > p { position: relative; z-index: 1; }
 .store-title { font-family: var(--font-serif), Georgia, serif; font-size: clamp(1.8rem, 3.4vw, 3rem); font-weight: 600; line-height: 1.2; letter-spacing: -.035em; margin: 0 auto; max-width: 1000px; }
-.store-filters { display: flex; align-items: center; justify-content: center; padding: .5rem 0; }
+.store-filters { display: flex; align-items: center; justify-content: center; padding: 0; }
 @media (max-width: 767px) {
- .store-intro { padding: 1.5rem 1rem; min-height: 230px; margin-bottom: 1rem; }
+ .store-intro { padding: 1.5rem 1rem; min-height: 230px; margin-bottom: .25rem; }
  .store-title { max-width: 580px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
