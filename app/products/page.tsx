@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useShopCatalog } from '@/hooks/use-shop-catalog';
 import { useCart } from '@/hooks/use-cart';
 import { ProductCard } from '@/components/product-card';
@@ -20,25 +21,14 @@ export default function ProductsPage() {
   }, [hampers, filter]);
   return <div>
     <section className='store-intro text-center'>
-      <svg className='hero-art hero-art-ribbon' viewBox='0 0 220 190' fill='none' aria-hidden='true' focusable='false'>
-        <g stroke='currentColor' strokeWidth='1.15' strokeLinecap='round' strokeLinejoin='round'>
-          <path d='M108 86C78 81 39 49 49 33C62 14 103 51 108 86ZM110 86C113 56 146 25 159 38C175 55 140 84 110 86Z' />
-          <path d='M107 86C93 114 64 127 49 157L70 150L74 169C84 142 104 117 110 91M113 88C123 111 144 120 157 141L138 137L139 156C121 140 111 115 110 91' />
-          <ellipse cx='109' cy='87' rx='7' ry='5' transform='rotate(-15 109 87)' />
-          <path d='M24 76v12M18 82h12M180 104v8M176 108h8' />
-          <circle cx='166' cy='22' r='2' />
-        </g>
-      </svg>
-      <svg className='hero-art hero-art-tag' viewBox='0 0 220 190' fill='none' aria-hidden='true' focusable='false'>
-        <g stroke='currentColor' strokeWidth='1.15' strokeLinecap='round' strokeLinejoin='round'>
-          <path d='M104 62C90 36 119 15 145 27C171 40 153 66 127 48C111 37 140 13 173 20' />
-          <path d='M93 53L121 61L148 120L99 143L72 84Z' />
-          <circle cx='100' cy='69' r='4' />
-          <path d='M105 95C96 86 87 98 112 111C127 88 111 83 105 95Z' />
-          <path d='M49 114C49 104 45 100 37 100C45 100 49 96 49 86C49 96 53 100 61 100C53 100 49 104 49 114ZM169 79v10M164 84h10' />
-          <circle cx='168' cy='145' r='2' />
-        </g>
-      </svg>
+      <div className='hero-collage hero-collage-left' aria-hidden='true'>
+        <Image src='/images/hampers/illustrations/deluxe_hamper.webp' alt='' width={320} height={280} className='hero-cutout hero-cutout-back' priority />
+        <Image src='/images/hampers/illustrations/family_breakfast.webp' alt='' width={320} height={180} className='hero-cutout hero-cutout-front' priority />
+      </div>
+      <div className='hero-collage hero-collage-right' aria-hidden='true'>
+        <Image src='/images/hampers/illustrations/alcohol_free.webp' alt='' width={320} height={285} className='hero-cutout hero-cutout-back' priority />
+        <Image src='/images/hampers/illustrations/for_her.webp' alt='' width={320} height={275} className='hero-cutout hero-cutout-front' priority />
+      </div>
       <h1 className='store-title'>Thoughtfully curated hampers,<br className='hidden sm:block' /> delivered with quiet luxury.</h1>
       <p className='mt-3 text-sm md:text-base leading-relaxed text-primary/75'>Order from our collection of premium signature gift hampers</p>
     </section>
