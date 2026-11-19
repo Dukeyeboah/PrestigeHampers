@@ -248,8 +248,7 @@ export function CheckoutDialog({
                   <strong className='font-mono'>{MOMO_NUMBER}</strong>
                   <br />
                   <span className='text-muted-foreground'>
-                    Use your order reference in the payment description after
-                    placing the order.
+                    {user ? 'Use your order reference in the payment description after placing the order.' : 'Confirm payment details with us in WhatsApp before sending payment.'}
                   </span>
                 </AlertDescription>
               </Alert>

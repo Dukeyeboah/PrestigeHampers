@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, createElement, type ReactNode } from 'react';
 import type { CartItem, Product } from '@/types';
 import { toast } from 'sonner';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 
 const CART_STORAGE_KEY = 'prestige_cart';
 
-export function useCart() {
+function useCartState() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const { user } = useAuth();
@@ -105,7 +105,7 @@ export function useCart() {
             await setDoc(
               cartDocRef,
               {
-                items: cart,
+                items: JSON.parse(JSON.stringify(cart)),
                 updatedAt: Date.now(),
               },
               { merge: true }
@@ -240,4 +240,15 @@ export function useCart() {
     total,
     isInitialized,
   };
+}
+
+const CartContext = createContext<ReturnType<typeof useCartState> | null>(null);
+export function CartProvider({ children }: { children: ReactNode }) {
+  const value = useCartState();
+  return createElement(CartContext.Provider, { value }, children);
+}
+export function useCart() {
+  const cart = useContext(CartContext);
+  if (!cart) throw new Error('useCart must be used within CartProvider');
+  return cart;
 }
