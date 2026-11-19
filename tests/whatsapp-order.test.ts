@@ -13,7 +13,7 @@ test('guest WhatsApp order includes contact, quantities, payment, notes and tota
  assert.match(message,/Gift & delivery/);
  const url=new URL(whatsappOrderLaunchUrl(message));
  assert.equal(url.hostname,'wa.me');
- assert.equal(url.pathname,'/14844684166');
+ assert.equal(url.pathname,'/41764054987');
  assert.equal(url.searchParams.get('text'),message);
 });
 test('account orders retain their reference and account details', () => {

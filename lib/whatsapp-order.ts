@@ -1,7 +1,7 @@
 import type { CartItem, User } from '@/types';
 
 /** Prestige Hampers order WhatsApp — digits only for wa.me */
-export const WHATSAPP_ORDER_CHAT_DIGITS = '14844684166';
+export const WHATSAPP_ORDER_CHAT_DIGITS = '41764054987';
 
 function siteBaseUrl() {
   return (
