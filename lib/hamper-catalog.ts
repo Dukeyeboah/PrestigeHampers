@@ -56,7 +56,7 @@ export const HAMPER_CATALOG: HamperCatalogEntry[] = [
   {
     id: 'hamper-alcohol-free',
     name: 'Alcohol Free',
-    price: 1300,
+    price: 1450,
     imageUrl: '/images/hampers/optimized/alcohol_free.webp',
     imageJpg: '/images/hampers/optimized/alcohol_free.jpg',
     description: 'A festive alcohol-free celebration crate with sparkling grape juices.',
@@ -187,7 +187,7 @@ export const HAMPER_CATALOG: HamperCatalogEntry[] = [
   {
     id: 'hamper-deluxe-hamper',
     name: 'Deluxe',
-    price: 6000,
+    price: 7000,
     imageUrl: '/images/hampers/optimized/deluxe_hamper.webp',
     imageJpg: '/images/hampers/optimized/deluxe_hamper.jpg',
     description: 'Our signature luxury crate — champagne, cognac, whisky, and gourmet extras.',

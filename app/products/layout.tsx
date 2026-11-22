@@ -26,7 +26,7 @@ export default function ProductsLayout({
   return (
     <div className='min-h-screen bg-background'>
       <TopNav />
-      <main className='pt-[68px]'>
+      <main className='editorial-main'>
         <Suspense fallback={<ProductsLoading />}>{children}</Suspense>
       </main>
     </div>

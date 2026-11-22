@@ -54,7 +54,8 @@ export function resolveProductImageUrl(product: Product): string | undefined {
 
 export function withResolvedImage(product: Product): Product {
   const imageUrl = resolveProductImageUrl(product);
-  const name = product.id === 'hamper-budget-hamper' ? 'Budget'
-    : product.id === 'hamper-deluxe-hamper' ? 'Deluxe' : product.name;
-  return { ...product, name, ...(imageUrl ? { imageUrl } : {}) };
+  const name = product.id === 'hamper-budget-hamper' ? 'Budget Hamper'
+    : product.id === 'hamper-deluxe-hamper' ? 'Deluxe Hamper' : product.name;
+  const price = product.id === 'hamper-alcohol-free' ? 1450 : product.id === 'hamper-deluxe-hamper' ? 7000 : product.price;
+  return { ...product, name, price, ...(imageUrl ? { imageUrl } : {}) };
 }

@@ -1,6 +1,6 @@
 import type React from 'react';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google';
+import { Hanken_Grotesk, Geist_Mono, Newsreader } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import {
   SITE_NAME,
@@ -15,9 +15,9 @@ import {
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-const geist = Geist({
+const geist = Hanken_Grotesk({
   subsets: ['latin'],
-  variable: '--font-sans',
+  variable: '--font-hanken',
 });
 
 const geistMono = Geist_Mono({
@@ -25,9 +25,9 @@ const geistMono = Geist_Mono({
   variable: '--font-mono',
 });
 
-const playfair = Playfair_Display({
+const playfair = Newsreader({
   subsets: ['latin'],
-  variable: '--font-serif',
+  variable: '--font-newsreader',
 });
 
 const siteUrl = getSiteUrl();

@@ -75,9 +75,11 @@ export function TopNav() {
 
   return (
     <>
-      <header className='fixed top-0 inset-x-0 z-40 border-b border-neutral-200/80 bg-background/95 backdrop-blur-md safe-area-inset-top'>
-        <div className='mx-auto flex h-[68px] max-w-[1440px] items-center gap-3 px-4 md:px-8'>
-          <Link href='/' className='flex items-center gap-2 shrink-0'>
+      <header className='editorial-nav'>
+        <div className='announcement'>Christmas pre-orders are open · Thoughtful gifts, beautifully wrapped</div>
+        <div className='editorial-nav-inner'>
+          <nav className='desktop-links'><Link href='/products#sets'>Shop all</Link><Link href='/about'>About</Link><Link href='/about#contact'>Contact</Link></nav>
+          <Link href='/' className='editorial-brand nav-brand'>
             <Image
               src='/images/Prestige_Logo.svg'
               alt='Prestige Hampers'
@@ -87,29 +89,13 @@ export function TopNav() {
               priority
               unoptimized
             />
-            <span className='text-base md:text-lg font-semibold tracking-tight text-primary'>
-              Prestige Hampers
-            </span>
+            <span>Prestige<br/>Hampers</span>
           </Link>
 
-          <div className='flex-1' />
+          <div className='nav-search'><form action='/products'><input name='q' aria-label='Search hampers' placeholder='Search'/><button type='submit' className='sr-only'>Search</button></form></div>
 
           <div className='flex items-center gap-2 shrink-0'>
-            <Link href='/cart' className='relative'>
-              <Button
-                variant={pathname === '/cart' ? 'default' : 'outline'}
-                size='icon'
-                className='rounded-full h-9 w-9'
-              >
-                <ShoppingCart className='h-4 w-4' />
-                <span className='sr-only'>My Cart</span>
-              </Button>
-              {cartCount > 0 && (
-                <Badge className='absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none'>
-                  {cartCount > 99 ? '99+' : cartCount}
-                </Badge>
-              )}
-            </Link>
+            <Link href='/cart' className='bag-link'>Bag ({cartCount})</Link>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

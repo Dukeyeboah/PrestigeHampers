@@ -43,7 +43,7 @@ export default function CartPage() {
   const [orderConfirmId, setOrderConfirmId] = useState<string | null>(null);
 
   const handleCheckout = () => {
-    setCheckoutOpen(true);
+    router.push('/gift-details');
   };
 
   if (!isInitialized) {

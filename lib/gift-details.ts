@@ -1,0 +1,4 @@
+export const GIFT_DETAILS_KEY='prestige_gift_details_v1';
+export type GiftDetails={recipientName:string;recipientPhone:string;region:string;area:string;address:string;date:string;message:string;from:string;surprise:boolean;deliveryOption:'delivery'|'pickup'};
+export const emptyGift:GiftDetails={recipientName:'',recipientPhone:'',region:'Greater Accra',area:'',address:'',date:'',message:'',from:'',surprise:true,deliveryOption:'delivery'};
+export function giftDetailsNotes(g:GiftDetails):string{return [`Recipient: ${g.recipientName}`,`Recipient phone: ${g.recipientPhone}`,`Fulfilment: ${g.deliveryOption}`,`Region: ${g.region}`,`Area: ${g.area}`,`Address / directions: ${g.address||'To be confirmed'}`,`Preferred date: ${g.date||'To be discussed'}`,`Card message: ${g.message||'No message'}`,`From: ${g.from||'Not specified'}`,`Keep sender a surprise: ${g.surprise?'Yes':'No'}`,'Pickup / delivery details and charges to be confirmed on WhatsApp after payment.'].join('\n');}

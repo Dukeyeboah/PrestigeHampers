@@ -11,7 +11,7 @@ export default function OrdersLayout({
   return (
     <div className='min-h-screen bg-background'>
       <TopNav />
-      <main className='pt-[68px]'>
+      <main className='editorial-main'>
         <div className='mx-auto max-w-[1440px] px-4 md:px-8 py-6 md:py-10'>{children}</div>
       </main>
     </div>
