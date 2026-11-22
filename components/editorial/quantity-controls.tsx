@@ -1,0 +1,3 @@
+'use client';
+import {useCart} from '@/hooks/use-cart';
+export function QuantityControls({id}:{id:string}){const {cart,updateQuantity}=useCart();const item=cart.find(i=>i.id===id);if(!item)return null;return <div className='inline-quantity' role='group' aria-label={`${item.name} quantity`}><button type='button' aria-label={`Decrease ${item.name} quantity`} disabled={item.quantity<=1} onClick={()=>updateQuantity(id,-1)}>−</button><output aria-live='polite'>{item.quantity}</output><button type='button' aria-label={`Increase ${item.name} quantity`} disabled={item.quantity>=item.stock} onClick={()=>updateQuantity(id,1)}>+</button></div>;}

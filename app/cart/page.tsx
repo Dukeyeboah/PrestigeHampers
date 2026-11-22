@@ -194,14 +194,14 @@ export default function CartPage() {
               onClick={handleCheckout}
               disabled={cart.length === 0}
             >
-              Checkout on WhatsApp
+              Proceed to checkout
 
             </Button>
 
             <p className='text-xs text-center text-muted-foreground'>
               {user
                 ? 'Orders are saved to your account for easy tracking.'
-                : 'No account needed. Send your order in WhatsApp to confirm it with us.'}
+                : 'Add your order details, then choose your payment method.'}
             </p>
           </div>
         </div>

@@ -56,6 +56,7 @@
     "embla-carousel-react": "8.5.1",
     "firebase": "latest",
     "input-otp": "1.4.1",
+    "libphonenumber-js": "^1.13.17",
     "lucide-react": "^0.454.0",
     "next": "^16.1.6",
     "next-themes": "latest",

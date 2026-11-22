@@ -21,9 +21,10 @@ test('account orders retain their reference and account details', () => {
  assert.match(message,/TEST1234/);assert.match(message,/test@example.com/);
 });
 
-test('gift checkout carries recipient, requested date and card into the WhatsApp draft', async () => {
+test('gift checkout carries recipient, requested date and contact method into the WhatsApp draft', async () => {
  const {giftDetailsNotes,emptyGift}=await import('../lib/gift-details');
  const notes=giftDetailsNotes({...emptyGift,recipientName:'Recipient',recipientPhone:'0200000000',area:'Accra',date:'2026-12-20',message:'Happy holidays!',from:'Sender'});
  const message=buildWhatsAppOrderMessage({items,total:2000,customerName:'Buyer',paymentMethod:'momo',notes});
- for(const expected of ['Recipient: Recipient','Recipient phone: 0200000000','Preferred date: 2026-12-20','Card message: Happy holidays!','From: Sender','Keep sender a surprise: Yes']) assert.ok(message.includes(expected));
+ for(const expected of ['Recipient: Recipient','Recipient phone: 0200000000','Preferred date: 2026-12-20','Recipient phone: 0200000000 (Calls / SMS)']) assert.ok(message.includes(expected));
+ assert.ok(!message.includes('Card message:'));
 });

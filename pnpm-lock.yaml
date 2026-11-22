@@ -116,6 +116,9 @@ dependencies:
   input-otp:
     specifier: 1.4.1
     version: 1.4.1(react-dom@19.2.0)(react@19.2.0)
+  libphonenumber-js:
+    specifier: ^1.13.17
+    version: 1.13.17
   lucide-react:
     specifier: ^0.454.0
     version: 0.454.0(react@19.2.0)
@@ -192,6 +195,10 @@ devDependencies:
     version: 5.1.3
 
 packages:
+
+  /libphonenumber-js@1.13.17:
+    resolution: {integrity: sha512-V92dxRHhYTsHF5B6IjR8rtKW6qL7xKuERPFFqZt7XQl8A+NikbwEzjhxGpM+R6JnWjaL7/wokWSdTG/eyYAscQ==}
+    dev: false
 
   /@alloc/quick-lru@5.2.0:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}

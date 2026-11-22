@@ -1,0 +1,11 @@
+'use client';
+import { useEffect, useRef, useId } from 'react';
+import { getCountries, getCountryCallingCode, type CountryCode } from 'libphonenumber-js';
+import { normalizePhone, type PhoneKind } from '@/lib/phone-number';
+const names = new Intl.DisplayNames(['en'], { type: 'region' });
+const countries = getCountries().sort((a,b)=>(names.of(a)||a).localeCompare(names.of(b)||b));
+export function PhoneField({label,value,country,kind,onChange}:{label:string;value:string;country:CountryCode;kind:PhoneKind;onChange:(value:string,country:CountryCode,kind:PhoneKind)=>void}) {
+ const id=useId(); const input=useRef<HTMLInputElement>(null); const normalized=normalizePhone(value,country,kind);
+ useEffect(()=>{input.current?.setCustomValidity(value&&!normalized?'Enter a valid phone number for the selected country.':'');},[value,normalized]);
+ return <div className='phone-field'><div className='form-grid'><label>{label} contact type<select value={kind} onChange={e=>onChange(value,e.target.value==='local'?'GH':country,e.target.value as PhoneKind)}><option value='local'>Local Ghana number (calls / SMS)</option><option value='whatsapp'>WhatsApp number</option></select></label>{kind==='whatsapp'&&<label>{label} country code<select value={country} onChange={e=>onChange(value,e.target.value as CountryCode,kind)}>{countries.map(c=><option key={c} value={c}>{names.of(c)} (+{getCountryCallingCode(c)})</option>)}</select></label>}</div><label htmlFor={id}>{label} phone<input ref={input} id={id} required type='tel' inputMode='tel' autoComplete='tel-national' value={value} placeholder={country==='GH'?'0245667892':'Enter phone number'} onChange={e=>{e.target.setCustomValidity('');onChange(e.target.value,country,kind);}} onBlur={e=>e.target.setCustomValidity(value&&!normalized?'Enter a valid phone number for the selected country.':'')} onInvalid={e=>{if(!normalized)e.currentTarget.setCustomValidity('Enter a valid phone number for the selected country.');}} aria-describedby={`${id}-hint`}/></label><p id={`${id}-hint`} className='field-note'>{normalized?`Saved as ${normalized}${kind==='whatsapp'?' · WhatsApp':' · Calls / SMS'}`:kind==='local'?'Enter a valid Ghana phone number, for example 0245667892.':'Select a country and enter the number. You can include the leading local zero.'}</p></div>;
+}

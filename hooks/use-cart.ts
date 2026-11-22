@@ -132,7 +132,7 @@ function useCartState() {
     saveCart();
   }, [cart, isInitialized, user]);
 
-  const addToCart = useCallback((product: Product, quantity: number = 1) => {
+  const addToCart = useCallback((product: Product, quantity: number = 1, quiet: boolean = false) => {
     // Ensure product has all required fields
     if (!product.id || !product.name || product.price === undefined) {
       console.error('Invalid product data:', product);
@@ -162,13 +162,13 @@ function useCartState() {
         newCart = prev.map((item) =>
           item.id === product.id ? cartItem : item
         );
-        toast.success(
+        if (!quiet) toast.success(
           quantity === 1
             ? `Added 1 more — ${newQuantity} × ${product.name} in cart`
             : `Added ${quantity} more — ${newQuantity} × ${product.name} in cart`
         );
       } else {
-        toast.success(
+        if (!quiet) toast.success(
           quantity === 1
             ? `Added 1 × ${product.name} to cart`
             : `Added ${quantity} × ${product.name} to cart`
