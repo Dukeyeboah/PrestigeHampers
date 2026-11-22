@@ -35,7 +35,7 @@ const siteUrl = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: `${SITE_NAME} — Premium Gift Hampers & Treats`,
+    default: `${SITE_NAME} — Thoughtfully Curated Hampers`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -53,30 +53,19 @@ export const metadata: Metadata = {
   applicationName: SITE_NAME,
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      {
-        url: '/icon-light-32x32.png',
-        sizes: '32x32',
-        type: 'image/png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        sizes: '32x32',
-        type: 'image/png',
-        media: '(prefers-color-scheme: dark)',
-      },
+      { url: '/favicon.ico?v=20261122', sizes: '32x32' },
+      { url: '/prestige-icon.svg', type: 'image/svg+xml' },
+      { url: '/prestige-icon-32.png', sizes: '32x32', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
-    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: '/favicon.ico?v=20261122',
+    apple: [{ url: '/prestige-icon-180.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
     type: 'website',
     locale: 'en_GH',
     url: '/',
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Premium Gift Hampers & Treats`,
+    title: `${SITE_NAME} — Thoughtfully Curated Hampers`,
     description: SITE_TAGLINE,
     images: [
       {
@@ -92,7 +81,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} — Premium Gift Hampers & Treats`,
+    title: `${SITE_NAME} — Thoughtfully Curated Hampers`,
     description: SITE_TAGLINE,
     images: [
       {

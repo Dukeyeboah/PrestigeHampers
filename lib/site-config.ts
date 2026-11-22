@@ -1,22 +1,22 @@
 /** Site-wide copy and URLs for metadata, Open Graph, and sharing */
 export const SITE_NAME = 'Prestige Hampers';
-export const SITE_SHORT_NAME = 'Prestige Shop';
+export const SITE_SHORT_NAME = 'Prestige Hampers';
 
 export const SITE_DESCRIPTION =
-  'Shop curated gift hampers and premium treats from Prestige Hampers. Browse signature hampers, order individual products, pay with cash or MoMo, and track your orders online.';
+  'Explore our collection of thoughtfully selected hampers. Choose a set, arrange pickup or delivery, and submit your order via WhatsApp.';
 
 export const SITE_TAGLINE =
-  'Thoughtfully curated hampers and premium gifts — delivered with quiet luxury.';
+  'Thoughtfully curated hampers, delivered with quiet luxury.';
 
 /**
- * Path to link-preview / Open Graph image (Family Breakfast, full-bleed 1200×630).
+ * Path to link-preview / Open Graph image (hero photograph, full-bleed 1200×630).
  * Use a JPEG under /public for WhatsApp, iMessage, Slack, etc.
  */
-export const OG_IMAGE_PATH = '/images/og-share.jpg';
+export const OG_IMAGE_PATH = '/images/hero-share-2026.jpg';
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_IMAGE_ALT =
-  'Prestige Hampers Family Breakfast hamper — curated gift collection';
+  'Prestige Hampers — thoughtfully prepared hamper in a wooden gift box';
 
 /**
  * Canonical public site URL for Open Graph / link previews.
