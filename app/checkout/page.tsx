@@ -32,6 +32,7 @@ export default function CheckoutPage() {
       if (!attempt || attempt.fingerprint !== fingerprint) { attempt = { id: crypto.randomUUID(), fingerprint }; sessionStorage.setItem('paystack_attempt', JSON.stringify(attempt)); }
       const idToken = await auth.currentUser?.getIdToken();
       const response = await fetch('/api/paystack/initialize', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) }, body: JSON.stringify({ ...payload, attemptId: attempt.id }) });
+      if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('The payment service is temporarily unavailable. Please try again shortly.');
       const result = await response.json();
       if (!response.ok) { if (!result.reference) sessionStorage.removeItem('paystack_attempt'); throw new Error(result.error || 'Unable to start payment.'); }
       sessionStorage.setItem('paystack_last_reference', result.reference);

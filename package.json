@@ -2,7 +2,7 @@
   "name": "prestige-hampers",
   "version": "0.1.0",
   "private": true,
-  "description": "Premium hamper shop — Prestige Hampers",
+  "description": "Premium hamper shop \u2014 Prestige Hampers",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -86,5 +86,8 @@
     "tw-animate-css": "1.3.3",
     "typescript": "^5.1"
   },
-  "packageManager": "pnpm@8.6.0+sha512.b8c69619796f1be9b934825a47824411e9c285b83ed403f8cd5a6ab383c4719838b87fa55cc4ddfd7fe58ab29903e4c2d30d1dfbefb2ddbb4835cc322acbb000"
+  "packageManager": "pnpm@8.6.0+sha512.b8c69619796f1be9b934825a47824411e9c285b83ed403f8cd5a6ab383c4719838b87fa55cc4ddfd7fe58ab29903e4c2d30d1dfbefb2ddbb4835cc322acbb000",
+  "engines": {
+    "node": "22.x"
+  }
 }

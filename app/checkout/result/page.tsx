@@ -23,6 +23,7 @@ export default function PaymentResult() {
     setBusy(true); setError('');
     try {
       const response = await fetch(`/api/paystack/verify?reference=${encodeURIComponent(reference)}`, { cache: 'no-store', signal });
+      if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('The payment service is temporarily unavailable. Please check again shortly.');
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not check payment.');
       setReceipt(result);
