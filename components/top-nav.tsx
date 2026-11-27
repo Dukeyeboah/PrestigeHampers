@@ -56,6 +56,7 @@ export function TopNav() {
           href: '/admin',
           icon: LayoutDashboard,
         },
+        { label: 'Paystack test orders', href: '/admin/paystack-test-orders', icon: ClipboardList },
       ]
     : isStaff
       ? [

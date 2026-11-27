@@ -229,6 +229,15 @@ function useCartState() {
     }
   }, []);
 
+  const removePurchasedItems = useCallback((purchased: Array<{ id: string; quantity: number }>) => {
+    setCart(current => current.flatMap(item => {
+      const paid = purchased.find(p => p.id === item.id);
+      if (!paid) return [item];
+      const quantity = item.quantity - paid.quantity;
+      return quantity > 0 ? [{ ...item, quantity }] : [];
+    }));
+  }, []);
+
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return {
@@ -238,6 +247,7 @@ function useCartState() {
     updateQuantity,
     setQuantity,
     clearCart,
+    removePurchasedItems,
     total,
     isInitialized,
   };

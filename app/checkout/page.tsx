@@ -1,20 +1,57 @@
 'use client';
-import {useEffect,useState} from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import {addDoc,collection} from 'firebase/firestore';
-import {db} from '@/lib/firebase';
-import {useAuth} from '@/lib/auth-context';
-import {useCart} from '@/hooks/use-cart';
-import {TopNav} from '@/components/top-nav';
-import {OrderSummary} from '@/components/editorial/order-summary';
-import {GIFT_DETAILS_KEY,giftDetailsNotes,emptyGift,type GiftDetails} from '@/lib/gift-details';
-import {buildWhatsAppOrderMessage,markWhatsAppCheckoutPending,openWhatsAppUrl,whatsappOrderLaunchUrl} from '@/lib/whatsapp-order';
-import {notifyAdminsOfNewOrder} from '@/lib/notifications';
-import {toast} from 'sonner';
-export default function CheckoutPage(){const {cart,total,isInitialized}=useCart();const {user}=useAuth();const [gift,setGift]=useState<GiftDetails|null>(null);const [ready,setReady]=useState(false);const [name,setName]=useState('');const [phone,setPhone]=useState('');const [email,setEmail]=useState('');const [payment,setPayment]=useState<'momo'|'cash'>('momo');const [network,setNetwork]=useState('MTN MoMo');const [notes,setNotes]=useState('');const [busy,setBusy]=useState(false);
- useEffect(()=>{try{const raw=sessionStorage.getItem(GIFT_DETAILS_KEY);if(raw){const saved={...emptyGift,...JSON.parse(raw)};setGift(saved);setName(saved.buyerName);setPhone(saved.buyerPhone);setEmail(saved.buyerEmail);}}catch{}setReady(true);},[]);
- async function submit(e:React.FormEvent){e.preventDefault();if(!gift||!cart.length||busy)return;setBusy(true);const orderNotes=[giftDetailsNotes(gift),email?`Buyer email: ${email}`:'',payment==='momo'?`MoMo network: ${network}`:'',notes].filter(Boolean).join('\n');let win:Window|null=null;
- try{let displayOrderId:string|undefined;if(user){if(!db)throw new Error('Unable to connect. Please try again.');win=window.open('about:blank','_blank');const order={userId:user.id,userName:name,userEmail:email||user.email,customerPhone:phone,items:cart,total,status:'pending',paymentMethod:payment,notes:orderNotes,deliveryOption:gift.deliveryOption,deliveryAddress:[gift.region,gift.area,gift.address].filter(Boolean).join(', '),giftDetails:gift,isGuest:false,createdAt:Date.now(),updatedAt:Date.now()};const ref=await addDoc(collection(db,'orders'),JSON.parse(JSON.stringify(order)));displayOrderId=ref.id.slice(0,8).toUpperCase();await notifyAdminsOfNewOrder(ref.id,name,total,cart.reduce((n,i)=>n+i.quantity,0)).catch(()=>{});}
- const message=buildWhatsAppOrderMessage({items:cart,total,user,customerName:name,contactPhone:phone,paymentMethod:payment,notes:orderNotes,displayOrderId});openWhatsAppUrl(whatsappOrderLaunchUrl(message),win);markWhatsAppCheckoutPending();}catch(error){win?.close();toast.error(error instanceof Error?error.message:'Could not prepare your order. Please try again.');}finally{setBusy(false);}}
- return <><TopNav/><main className='editorial-container flow-page'><nav className='flow-steps'><Link href='/gift-details'>01 Order details</Link><span aria-current='step'>02 Payment details</span></nav>{!ready||!isInitialized?<p>Loading checkout…</p>:!cart.length?<div className='py-16'><h1>Your bag is empty</h1><Link className='editorial-button' href='/products#sets'>Choose a set</Link></div>:!gift?.recipientName||!gift?.buyerName||!gift?.buyerPhone?<div className='py-16'><h1>Who’s it for?</h1><p>Let’s add your gift details first.</p><Link className='editorial-button' href='/gift-details'>Add gift details</Link></div>:<div className='flow-grid'><form onSubmit={submit}><h1>Payment details</h1><p className='flow-intro'>Choose how you’d like to pay, then submit your order via WhatsApp.</p><section className='buyer-review'><p className='eyebrow'>Ordered by</p><h3>{name}</h3><p>{phone}{email?` · ${email}`:''}</p><Link href='/gift-details'>Edit order details</Link></section><fieldset><legend><span>01</span>Payment method</legend><label className={`payment-choice ${payment==='momo'?'selected':''}`}><span><input type='radio' name='payment' checked={payment==='momo'} onChange={()=>setPayment('momo')}/> Mobile Money</span><small>MTN MoMo, Telecel Cash, AT Money</small></label>{payment==='momo'&&<div className='choice-row'>{['MTN MoMo','Telecel Cash','AT Money'].map(n=><button type='button' key={n} aria-pressed={network===n} onClick={()=>setNetwork(n)}>{n}</button>)}</div>}<label className={`payment-choice ${payment==='cash'?'selected':''}`}><span><input type='radio' name='payment' checked={payment==='cash'} onChange={()=>setPayment('cash')}/> Cash</span><small>Arrange payment with us on WhatsApp.</small></label><p className='field-note'>No payment is taken on this page. We’ll confirm availability and payment instructions on WhatsApp.</p></fieldset><label>Anything else? (optional)<textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder='Special instructions for your order'/></label><button className='editorial-button checkout-submit' disabled={busy} type='submit'>{busy?'Preparing your order…':'Submit order via WhatsApp'}</button><p className='field-note'>Send the message in WhatsApp to complete your request. Your bag stays saved until you choose to clear it.</p></form><div><OrderSummary/><section className='gift-review'><p className='eyebrow'>Gift to</p><h3>{gift.recipientName}</h3><p>{gift.deliveryOption==='pickup'?'Pick up':[gift.area,gift.region].filter(Boolean).join(', ')}{gift.date?` · Preferred ${gift.date}`:''}</p><Link href='/gift-details'>Edit order details</Link></section></div></div>}</main></>;
+import { auth } from '@/lib/firebase';
+import { useCart } from '@/hooks/use-cart';
+import { TopNav } from '@/components/top-nav';
+import { OrderSummary } from '@/components/editorial/order-summary';
+import { GIFT_DETAILS_KEY, emptyGift, type GiftDetails } from '@/lib/gift-details';
+import { toast } from 'sonner';
+
+export default function CheckoutPage() {
+  const { cart, total, isInitialized } = useCart();
+  const [gift, setGift] = useState<GiftDetails | null>(null);
+  const [ready, setReady] = useState(false);
+  const [email, setEmail] = useState('');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    try { const raw = sessionStorage.getItem(GIFT_DETAILS_KEY); if (raw) { const saved = { ...emptyGift, ...JSON.parse(raw) }; setGift(saved); setEmail(saved.buyerEmail); } } catch {}
+    setReady(true);
+  }, []);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); if (!gift || !cart.length || busy) return;
+    setBusy(true);
+    try {
+      const updatedGift = { ...gift, buyerEmail: email.trim() };
+      sessionStorage.setItem(GIFT_DETAILS_KEY, JSON.stringify(updatedGift));
+      const payload = { items: cart.map(i => ({ id: i.id, quantity: i.quantity })), expectedAmount: Math.round(total * 100), gift: updatedGift, notes };
+      const fingerprint = JSON.stringify(payload);
+      let attempt: { id: string; fingerprint: string } | null = null;
+      try { attempt = JSON.parse(sessionStorage.getItem('paystack_attempt') || 'null'); } catch {}
+      if (!attempt || attempt.fingerprint !== fingerprint) { attempt = { id: crypto.randomUUID(), fingerprint }; sessionStorage.setItem('paystack_attempt', JSON.stringify(attempt)); }
+      const idToken = await auth.currentUser?.getIdToken();
+      const response = await fetch('/api/paystack/initialize', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) }, body: JSON.stringify({ ...payload, attemptId: attempt.id }) });
+      const result = await response.json();
+      if (!response.ok) { if (!result.reference) sessionStorage.removeItem('paystack_attempt'); throw new Error(result.error || 'Unable to start payment.'); }
+      sessionStorage.setItem('paystack_last_reference', result.reference);
+      window.location.assign(result.authorizationUrl);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to start payment.'); setBusy(false); }
+  }
+  return <><TopNav /><main className='editorial-container flow-page'>
+    <nav className='flow-steps'><Link href='/gift-details'>01 Order details</Link><span aria-current='step'>02 Payment details</span></nav>
+    {!ready || !isInitialized ? <p>Loading checkout…</p> : !cart.length ? <div className='py-16'><h1>Your bag is empty</h1><Link className='editorial-button' href='/products#sets'>Choose a set</Link></div> : !gift?.buyerName || !gift?.buyerPhone ? <div className='py-16'><h1>Who’s it for?</h1><p>Let’s add your order details first.</p><Link className='editorial-button' href='/gift-details'>Add order details</Link></div> : <div className='flow-grid'>
+      <form onSubmit={submit} onInvalidCapture={() => toast.error('Please enter a valid email for your payment receipt.', { id: 'payment-email' })}>
+        <h1>Payment details</h1><p className='payment-test-banner'>Test checkout · No real money will be charged.</p>
+        <p className='flow-intro'>Pay securely by Mobile Money or card through Paystack.</p>
+        <section className='buyer-review'><p className='eyebrow'>Your details</p><h3>{gift.buyerName}</h3><p>{gift.buyerPhone}</p><Link href='/gift-details'>Edit order details</Link></section>
+        <label>Email for your receipt<input type='email' required maxLength={254} autoComplete='email' value={email} onChange={e => setEmail(e.target.value)} /></label>
+        <fieldset><legend>Payment method</legend><p>Choose Mobile Money or card on the secure Paystack payment screen.</p><p className='field-note'>MTN MoMo, Telecel Cash, ATMoney and cards.</p></fieldset>
+        <label>Anything else? (optional)<textarea rows={3} maxLength={1000} value={notes} onChange={e => setNotes(e.target.value)} placeholder='Special instructions for your order' /></label>
+        <p className='payment-delivery-note'>Payment covers your hampers only. Delivery charges, if applicable, will be confirmed separately after payment.</p>
+        <button className='editorial-button checkout-submit' disabled={busy} type='submit'>{busy ? 'Opening secure payment…' : `Pay GHC ${total.toLocaleString('en-GH')} · Test payment`}</button>
+        <p className='field-note'>Your order is confirmed once payment is verified. You can then discuss pickup or delivery with us on WhatsApp.</p>
+      </form><div><OrderSummary /><section className='gift-review'><p className='eyebrow'>Pickup / delivery</p><p>{gift.deliveryOption === 'pickup' ? 'Pick up' : [gift.area, gift.region].filter(Boolean).join(', ')}{gift.date ? ` · Preferred ${gift.date}` : ''}</p><Link href='/gift-details'>Edit order details</Link></section></div>
+    </div>}
+  </main></>;
 }
