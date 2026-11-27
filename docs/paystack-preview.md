@@ -37,3 +37,16 @@ Run `node --conditions=react-server --import tsx --test tests/*.test.ts` and `ne
 Use Paystack's test card `4084084084084081`, CVV `408`, any future expiry, only in the TEST gateway. Declined card: `4084080000005408`, CVV `001`. Confirm success creates a single test order, reloads don't duplicate it, pending/failed payments don't create paid orders, unsigned webhook POST returns 401, unauthenticated admin API returns 403, and wrong receipt cookies don't expose customer information.
 
 Before production: activate merchant account and channels, configure sender email, reconcile delivery policy, review reservation/fulfilment/refund handling and existing Firebase role rules, add production secrets separately, remove the explicit test guard only as part of that reviewed rollout, and use production collections/webhook separately.
+
+## Test order management dashboard
+
+Open `/admin/paystack-test-orders` on the preview and sign in with Google. The server authorises verified emails in `PAYSTACK_TEST_ADMIN_EMAILS` (or `ORDER_NOTIFICATION_EMAIL` as the fallback). To manage additional users in Firebase without trusting browser-editable profiles:
+
+1. Have the person sign in once. In Firebase Console → Authentication → Users, copy their UID.
+2. In Firestore Database → Data, create collection `paystack_test_admins` and a document whose ID is that UID.
+3. Add `role` (string) = `admin` and `active` (boolean) = `true`.
+4. To revoke this assignment, set `active` to `false`. If their email is also on the environment allowlist, remove it there and redeploy too.
+
+This collection has no browser access under the existing default-deny rules; manage it via Firebase Console or trusted Admin SDK only. Ordinary `users.role` is deliberately not trusted because legacy profile-creation rules allow clients to specify that field. No shared production rules or roles are changed in this preview.
+
+Dashboard: newest 50 orders first; load older pages for full history. Search, fulfilment filters, counts and paid totals cover the loaded orders (clearly labelled). Details include items, verified payment reference, customer contact, delivery information and notes. Fulfilment statuses are New, Preparing, Ready for pickup, Out for delivery, Fulfilled and Cancelled. Each save requires an internal note and appends actor/time/status history atomically with a version check, preventing silent overwrites from multiple admins. Reload an order after a conflict. Cancelling fulfilment never changes payment status or initiates a refund. Payment fields cannot be edited through this API. No WhatsApp message is sent by dashboard updates.
