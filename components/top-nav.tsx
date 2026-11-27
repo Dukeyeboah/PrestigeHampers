@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { onIdTokenChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -31,9 +33,32 @@ import { LoginDialog } from '@/components/login-dialog';
 
 export function TopNav() {
   const pathname = usePathname();
-  const { user, isAdmin, isStaff, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { cart } = useCart();
   const [showLogin, setShowLogin] = useState(false);
+
+  const [orderAdmin, setOrderAdmin] = useState(false);
+  useEffect(() => {
+    let revision = 0;
+    let disposed = false;
+    const check = async () => {
+      const current = ++revision;
+      setOrderAdmin(false);
+      const identity = auth.currentUser;
+      if (!identity) return;
+      try {
+        const token = await identity.getIdToken();
+        const response = await fetch('/api/paystack/admin-access', {
+          headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+        });
+        const result = response.ok ? await response.json() : null;
+        if (!disposed && current === revision) setOrderAdmin(result?.admin === true);
+      } catch { /* Hide the link if permission cannot be confirmed. */ }
+    };
+    const unsubscribe = onIdTokenChanged(auth, check);
+    window.addEventListener('focus', check);
+    return () => { disposed = true; revision++; unsubscribe(); window.removeEventListener('focus', check); };
+  }, []);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -49,24 +74,9 @@ export function TopNav() {
     { label: 'Saved', href: '/saved', icon: Bookmark },
   ];
 
-  const adminRoutes = isAdmin
-    ? [
-        {
-          label: 'Admin Dashboard',
-          href: '/admin',
-          icon: LayoutDashboard,
-        },
-        { label: 'Paystack test orders', href: '/admin/paystack-test-orders', icon: ClipboardList },
-      ]
-    : isStaff
-      ? [
-          {
-            label: 'Staff Dashboard',
-            href: '/staff',
-            icon: LayoutDashboard,
-          },
-        ]
-      : [];
+  const adminRoutes = orderAdmin
+    ? [{ label: 'Admin dashboard', href: '/admin/paystack-test-orders', icon: LayoutDashboard }]
+    : [];
 
   const menuRoutes = [
     ...navRoutes.filter((r) => !r.requiresAuth || user),
