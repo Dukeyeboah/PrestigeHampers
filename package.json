@@ -2,7 +2,7 @@
   "name": "prestige-hampers",
   "version": "0.1.0",
   "private": true,
-  "description": "Premium hamper shop \u2014 Prestige Hampers",
+  "description": "Premium hamper shop — Prestige Hampers",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -55,7 +55,7 @@
     "date-fns": "latest",
     "embla-carousel-react": "8.5.1",
     "firebase": "latest",
-    "firebase-admin": "^14.5.1",
+    "firebase-admin": "^13.10.0",
     "input-otp": "1.4.1",
     "libphonenumber-js": "^1.13.17",
     "lucide-react": "^0.454.0",
