@@ -10,6 +10,6 @@ export function validateUpdate(order: {paymentStatus?:string;testMode?:boolean;d
  if(input.status==='ready_for_pickup' && order.deliveryOption!=='pickup') throw new Error('This order is for delivery, not pickup.');
  if(input.status==='out_for_delivery' && order.deliveryOption!=='delivery') throw new Error('This order is for pickup, not delivery.');
 }
-export function adminAllowed(identity:{email?:string;email_verified?:boolean}|null, allowed:string[], assignment?:{role?:string;active?:boolean}) {
- return Boolean(identity?.email_verified && identity.email && (allowed.includes(identity.email.toLowerCase()) || (assignment?.role==='admin' && assignment.active===true)));
+export function adminAllowed(identity:{email?:string;email_verified?:boolean}|null, profile?:{role?:string}) {
+ return Boolean(identity?.email_verified && identity.email && profile?.role==='admin');
 }

@@ -7,7 +7,6 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { User } from '@/types';
 import { useRouter } from 'next/navigation';
-import { isAdminEmail } from '@/lib/admin-config';
 
 interface AuthContextType {
   user: User | null;
@@ -88,12 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             applyRoleView(updatedUser.role);
           } else {
             const email = firebaseUser.email || '';
-            const shouldBeAdmin = isAdminEmail(email);
 
             const newUser: User = {
               id: firebaseUser.uid,
               email: email,
-              role: shouldBeAdmin ? 'admin' : 'client',
+              role: 'client',
               name: firebaseUser.displayName || '',
               phone: firebaseUser.phoneNumber || '',
               profileComplete: false,

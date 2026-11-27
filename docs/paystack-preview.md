@@ -8,7 +8,7 @@ Branch: `feature/paystack-test-checkout`. This implementation deliberately rejec
 - `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`: `pk_test_…` (reserved for inline checkout; hosted checkout currently initializes server-side and doesn't require it).
 - `FIREBASE_SERVICE_ACCOUNT_JSON`: full downloaded service-account JSON, unchanged. Must belong to `NEXT_PUBLIC_FIREBASE_PROJECT_ID`.
 - `ORDER_NOTIFICATION_EMAIL`: merchant notification recipient; also the default test-order admin allowlist.
-- Optional `PAYSTACK_TEST_ADMIN_EMAILS`: comma-separated verified Firebase account emails allowed to read test orders.
+- Admin access uses the current `users/{uid}.role` from Firestore. Email environment variables do not grant access.
 - Optional `PAYSTACK_WEBHOOK_SECRET`: Paystack's newer `whsec_…` signing secret if enabled. Legacy `x-paystack-signature` is verified with the test API secret.
 - Optional `RESEND_API_KEY` and `ORDER_NOTIFICATION_FROM`: email delivery requires both and a verified sender. Until configured, orders remain saved with `notificationStatus: not_configured`.
 
@@ -40,13 +40,12 @@ Before production: activate merchant account and channels, configure sender emai
 
 ## Test order management dashboard
 
-Open `/admin/paystack-test-orders` on the preview and sign in with Google. The server authorises verified emails in `PAYSTACK_TEST_ADMIN_EMAILS` (or `ORDER_NOTIFICATION_EMAIL` as the fallback). To manage additional users in Firebase without trusting browser-editable profiles:
+Open `/admin/paystack-test-orders` on the preview and sign in with Google. The server requires a verified Firebase identity and reads `users/{uid}.role` on every request.
 
-1. Have the person sign in once. In Firebase Console → Authentication → Users, copy their UID.
-2. In Firestore Database → Data, create collection `paystack_test_admins` and a document whose ID is that UID.
-3. Add `role` (string) = `admin` and `active` (boolean) = `true`.
-4. To revoke this assignment, set `active` to `false`. If their email is also on the environment allowlist, remove it there and redeploy too.
+1. Have the person sign in once, then find their UID under Firebase Authentication → Users.
+2. In Firestore → users → that UID, set `role` (string) to `admin`.
+3. To revoke access, change `role` to `client`. Refresh the site to update the menu; subsequent API requests check the current role immediately.
 
-This collection has no browser access under the existing default-deny rules; manage it via Firebase Console or trusted Admin SDK only. Ordinary `users.role` is deliberately not trusted because legacy profile-creation rules allow clients to specify that field. No shared production rules or roles are changed in this preview.
+Deploy the hardened `firestore.rules` BEFORE deploying this role-based authorization. Browser profiles can only be created with `role: client` and no `permissions`; no browser (including admins) can change/remove role or permissions, or delete profiles. Console / trusted Admin SDK manages these fields. Existing users retain their roles. The previous email allowlist and `paystack_test_admins` collection no longer grant dashboard access. The shared database rules also protect production; the new dashboard stays on the test branch.
 
 Dashboard: newest 50 orders first; load older pages for full history. Search, fulfilment filters, counts and paid totals cover the loaded orders (clearly labelled). Details include items, verified payment reference, customer contact, delivery information and notes. Fulfilment statuses are New, Preparing, Ready for pickup, Out for delivery, Fulfilled and Cancelled. Each save requires an internal note and appends actor/time/status history atomically with a version check, preventing silent overwrites from multiple admins. Reload an order after a conflict. Cancelling fulfilment never changes payment status or initiates a refund. Payment fields cannot be edited through this API. No WhatsApp message is sent by dashboard updates.

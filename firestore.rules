@@ -44,17 +44,17 @@ service cloud.firestore {
       // Admins can read any profile
       allow read: if isAuthenticated();
       
-      // Users can create their own profile on first login
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Users can update their own profile (except role and permissions), admins can update any profile
-      allow update: if isAuthenticated() && (
-        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'permissions'])) ||
-        isAdmin()
-      );
-      
-      // Only admins can delete users
-      allow delete: if isAdmin();
+      // Browser sign-up always starts as a client, without privileged permissions.
+      allow create: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.role == 'client'
+        && !request.resource.data.keys().hasAny(['permissions']);
+
+      // Roles and permissions are managed only through Console / trusted Admin SDK.
+      // Even an admin browser cannot change these fields or delete/recreate a profile.
+      allow update: if isAuthenticated()
+        && (request.auth.uid == userId || isAdmin())
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'permissions']);
+      allow delete: if false;
     }
 
     // Inventory collection
